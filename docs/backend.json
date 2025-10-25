@@ -1,0 +1,305 @@
+{
+  "entities": {
+    "Patient": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Patient",
+      "type": "object",
+      "description": "Represents a patient account in the PulseGuard application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Patient entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the patient."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the patient."
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "Date of birth of the patient.",
+          "format": "date-time"
+        },
+        "medicalHistory": {
+          "type": "string",
+          "description": "Detailed medical history of the patient."
+        },
+        "doctorId": {
+          "type": "string",
+          "description": "Reference to Doctor. (Relationship: Doctor 1:N Patient)"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "dateOfBirth",
+        "doctorId"
+      ]
+    },
+    "Doctor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Doctor",
+      "type": "object",
+      "description": "Represents a doctor account in the PulseGuard application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Doctor entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the doctor."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the doctor."
+        },
+        "age": {
+          "type": "number",
+          "description": "Age of the doctor."
+        },
+        "licenseInformation": {
+          "type": "string",
+          "description": "License information of the doctor."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "age",
+        "licenseInformation"
+      ]
+    },
+    "SensorData": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SensorData",
+      "type": "object",
+      "description": "Represents sensor data readings for a patient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SensorData entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to Patient. (Relationship: Patient 1:N SensorData)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of the sensor data reading.",
+          "format": "date-time"
+        },
+        "o2Level": {
+          "type": "number",
+          "description": "Oxygen level reading."
+        },
+        "roomTemperature": {
+          "type": "number",
+          "description": "Room temperature reading."
+        },
+        "patientTemperature": {
+          "type": "number",
+          "description": "Patient temperature reading."
+        },
+        "heartRate": {
+          "type": "number",
+          "description": "Heart rate reading."
+        },
+        "roomHumidity": {
+          "type": "number",
+          "description": "Room humidity reading."
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "timestamp",
+        "o2Level",
+        "roomTemperature",
+        "patientTemperature",
+        "heartRate",
+        "roomHumidity"
+      ]
+    },
+    "Alert": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Alert",
+      "type": "object",
+      "description": "Represents an alert generated based on sensor data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Alert entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to Patient. (Relationship: Patient 1:N Alert)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the alert was generated.",
+          "format": "date-time"
+        },
+        "message": {
+          "type": "string",
+          "description": "Description of the alert."
+        },
+        "severity": {
+          "type": "string",
+          "description": "Severity level of the alert (e.g., low, medium, high)."
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "timestamp",
+        "message",
+        "severity"
+      ]
+    },
+    "AnomalyData": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AnomalyData",
+      "type": "object",
+      "description": "Represents anomaly data detected by the AI model.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AnomalyData entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to Patient. (Relationship: Patient 1:N AnomalyData)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the anomaly was detected.",
+          "format": "date-time"
+        },
+        "anomalyLevel": {
+          "type": "number",
+          "description": "The level of anomaly detected."
+        },
+        "sensorDataId": {
+          "type": "string",
+          "description": "Reference to SensorData. (Relationship: SensorData 1:1 AnomalyData)"
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "timestamp",
+        "anomalyLevel",
+        "sensorDataId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/doctors/{doctorId}",
+        "definition": {
+          "entityName": "Doctor",
+          "schema": {
+            "$ref": "#/backend/entities/Doctor"
+          },
+          "description": "Stores doctor account information. Doctors can only manage their own profile data.",
+          "params": [
+            {
+              "name": "doctorId",
+              "description": "The unique identifier for the doctor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/patients/{patientId}",
+        "definition": {
+          "entityName": "Patient",
+          "schema": {
+            "$ref": "#/backend/entities/Patient"
+          },
+          "description": "Stores patient account information. Includes denormalized 'doctorId' for authorization independence. This allows security rules to efficiently check if the requesting doctor has access to the patient's data without additional reads.",
+          "params": [
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the patient."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/patients/{patientId}/sensorData/{sensorDataId}",
+        "definition": {
+          "entityName": "SensorData",
+          "schema": {
+            "$ref": "#/backend/entities/SensorData"
+          },
+          "description": "Stores sensor data readings for a patient. Located in a subcollection to ensure data segregation and ownership.",
+          "params": [
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the patient."
+            },
+            {
+              "name": "sensorDataId",
+              "description": "The unique identifier for the sensor data reading."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/patients/{patientId}/alerts/{alertId}",
+        "definition": {
+          "entityName": "Alert",
+          "schema": {
+            "$ref": "#/backend/entities/Alert"
+          },
+          "description": "Stores alerts generated based on sensor data for a specific patient. This subcollection structure ensures clear ownership and simplifies list operations.",
+          "params": [
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the patient."
+            },
+            {
+              "name": "alertId",
+              "description": "The unique identifier for the alert."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/patients/{patientId}/anomalyData/{anomalyDataId}",
+        "definition": {
+          "entityName": "AnomalyData",
+          "schema": {
+            "$ref": "#/backend/entities/AnomalyData"
+          },
+          "description": "Stores anomaly data detected by the AI model for a specific patient. Stored as a subcollection for clear data segregation and simplified querying.",
+          "params": [
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the patient."
+            },
+            {
+              "name": "anomalyDataId",
+              "description": "The unique identifier for the anomaly data."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure Authorization Independence, clarity, and scalability for the PulseGuard application. We leverage path-based ownership for Patient data and subcollections to maintain clear ownership and access control. Doctor documents are stored in a top-level collection, while patient-related data is organized under each patient document. This approach avoids hierarchical authorization dependencies by denormalizing the doctorId to each patient document, thus eliminating the need for `get()` calls in security rules and enabling atomic operations. Data segregation is achieved by placing different data types (Patient, Doctor, SensorData, Alert, AnomalyData) into separate collections or subcollections, each with a homogeneous security posture.\n\nSpecifically, for patient-owned data (SensorData, Alerts, and AnomalyData), we use subcollections under the `/patients/{patientId}` path. Each of these subcollections contains data specific to that patient, enabling secure list operations (QAPs) as security rules can efficiently filter data based on the `patientId` in the path.\n\nBy denormalizing the `doctorId` into each patient document, the system achieves authorization independence. This allows security rules to validate that the requesting doctor has access to the patient data based solely on the patient document itself, without needing to fetch the doctor document. This simplifies rule logic and ensures that access control remains robust and efficient.\n\nTimestamp fields are included in `SensorData`, `Alert`, and `AnomalyData` for effective querying and data management. The structure supports the integrity of ownership, timestamps, and denormalized data, adhering to the defined invariants."
+  }
+}
