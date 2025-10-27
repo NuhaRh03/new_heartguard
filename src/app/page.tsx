@@ -12,10 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
-import { ArrowRight, PlusCircle, User } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { useCollection, useFirestore } from "@/firebase";
+import { collection, query } from "firebase/firestore";
 import { useMemoFirebase } from "@/firebase/provider";
 import { AddPatientDialog } from "@/components/add-patient-dialog";
 import { Patient, getPatientStatusFromReading } from "@/lib/types";
@@ -24,12 +24,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function DashboardPage() {
   const patientImages = PlaceHolderImages.filter(p => p.id.startsWith('patient-'));
   const firestore = useFirestore();
-  const { user } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, "patients"), where("doctorId", "==", user.uid));
-  }, [firestore, user]);
+    if (!firestore) return null;
+    return query(collection(firestore, "patients"));
+  }, [firestore]);
 
   const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
 
@@ -76,7 +75,7 @@ export default function DashboardPage() {
               {!isLoading && patients?.map((patient, index) => {
                 const latestReading = patient.sensorData?.[patient.sensorData.length - 1];
                 const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
-                const patientImage = patientImages.find(img => img.id === `patient-${patient.id % 4 + 1}`);
+                const patientImage = patientImages.find(img => img.id === `patient-${(patient.id.charCodeAt(0) % 4) + 1}`);
 
                 return (
                   <TableRow key={patient.id}>
@@ -112,10 +111,10 @@ export default function DashboardPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      {latestReading?.heartRate ? `${latestReading.heartRate} bpm` : 'N/A'}
+                      {latestReading?.heartRate ? `${latestReading.heartRate.toFixed(0)} bpm` : 'N/A'}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      {latestReading?.o2Level ? `${latestReading.o2Level}%` : 'N/A'}
+                      {latestReading?.o2Level ? `${latestReading.o2Level.toFixed(0)}%` : 'N/A'}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {latestReading?.patientTemperature ? latestReading.patientTemperature.toFixed(1) : 'N/A'}

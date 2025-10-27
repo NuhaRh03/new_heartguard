@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { AuthProvider } from '@/components/auth-provider';
+import { DashboardLayout } from '@/components/dashboard-layout';
 
 export const metadata: Metadata = {
   title: 'HeartGuard',
@@ -27,9 +27,9 @@ export default function RootLayout({
         )}
       >
         <FirebaseClientProvider>
-          <AuthProvider>
+          <DashboardLayout>
             {children}
-          </AuthProvider>
+          </DashboardLayout>
         </FirebaseClientProvider>
       </body>
     </html>

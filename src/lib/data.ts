@@ -9,7 +9,7 @@ export const doctorProfile: DoctorProfile = {
   email: 'e.reed@pulseguard.io'
 };
 
-const generateSensorData = (count: number, baseline: Partial<SensorReading>): SensorReading[] => {
+export const generateSensorData = (count: number, baseline: Partial<SensorReading>): SensorReading[] => {
   const data: SensorReading[] = [];
   const now = new Date();
 
@@ -30,32 +30,3 @@ const generateSensorData = (count: number, baseline: Partial<SensorReading>): Se
   }
   return data;
 };
-
-// This is now mock data, the app will use Firestore
-export const patients: Patient[] = [
-  {
-    id: '1',
-    name: 'John Smith',
-    age: 68,
-    gender: 'Male',
-    doctorId: 'doc1',
-    contact: {
-      phone: '555-0101',
-      email: 'john.smith@example.com',
-    },
-    emergencyContact: {
-      name: 'Jane Smith',
-      relation: 'Wife',
-      phone: '555-0102',
-    },
-    medicalHistory: ['Hypertension', 'Type 2 Diabetes'],
-    currentMedications: ['Lisinopril', 'Metformin'],
-    sensorData: generateSensorData(100, {
-      o2Level: 97,
-      roomTemperature: 22,
-      patientTemperature: 37.0,
-      heartRate: 75,
-      roomHumidity: 45,
-    }),
-  },
-];

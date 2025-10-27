@@ -24,20 +24,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth, useFirestore, useUser } from "@/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
+import { collection, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { generateSensorData } from "@/lib/data";
+
+
+const arabicName = () => {
+    const names = ["خالد", "فاطمة", "علي", "عائشة", "محمد", "زينب", "يوسف", "مريم"];
+    const families = ["الأحمد", "العبدالله", "الحسن", "علي", "محمد", "السيد", "المحمود"];
+    return `${names[Math.floor(Math.random() * names.length)]} ${families[Math.floor(Math.random() * families.length)]}`;
+}
 
 const patientSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  age: z.coerce.number().min(0, "Age must be a positive number.").max(120),
+  name: z.string().min(2, "Name must be at least 2 characters.").default(arabicName),
+  age: z.coerce.number().min(0, "Age must be a positive number.").max(120).default(() => Math.floor(Math.random() * 60) + 20),
   gender: z.enum(["Male", "Female", "Other"]),
-  contactPhone: z.string().min(10, "Enter a valid phone number."),
-  contactEmail: z.string().email("Enter a valid email."),
-  emergencyContactName: z.string().min(2, "Name must be at least 2 characters."),
-  emergencyContactRelation: z.string().min(2, "Relation must be at least 2 characters."),
-  emergencyContactPhone: z.string().min(10, "Enter a valid phone number."),
+  contactPhone: z.string().min(10, "Enter a valid phone number.").default(() => `555-01${Math.floor(Math.random() * 90) + 10}`),
+  contactEmail: z.string().email("Enter a valid email.").default(() => `patient.${Math.floor(Math.random() * 1000)}@example.com`),
+  emergencyContactName: z.string().min(2, "Name must be at least 2 characters.").default(arabicName),
+  emergencyContactRelation: z.string().min(2, "Relation must be at least 2 characters.").default(() => ["Friend", "Spouse", "Parent", "Sibling"][Math.floor(Math.random() * 4)]),
+  emergencyContactPhone: z.string().min(10, "Enter a valid phone number.").default(() => `555-02${Math.floor(Math.random() * 90) + 10}`),
 });
 
 type PatientFormData = z.infer<typeof patientSchema>;
@@ -46,7 +54,6 @@ export function AddPatientDialog() {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const firestore = useFirestore();
-  const { user } = useUser();
   const { toast } = useToast();
 
   const {
@@ -58,21 +65,18 @@ export function AddPatientDialog() {
   } = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
-      gender: "Male"
+      gender: "Male",
+      ...patientSchema.partial().default({})
     }
   });
 
   const onSubmit = (data: PatientFormData) => {
-    if (!user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add a patient.' });
-        return;
-    }
     startTransition(() => {
         const patientData = {
             name: data.name,
             age: data.age,
             gender: data.gender,
-            doctorId: user.uid,
+            doctorId: "doc1", // Hardcoded as there is no logged in user
             contact: {
                 phone: data.contactPhone,
                 email: data.contactEmail,
@@ -84,7 +88,13 @@ export function AddPatientDialog() {
             },
             medicalHistory: [], // Default empty values
             currentMedications: [],
-            sensorData: [],
+            sensorData: generateSensorData(100, {
+                o2Level: 97,
+                roomTemperature: 22,
+                patientTemperature: 37.0,
+                heartRate: 75,
+                roomHumidity: 45,
+            }),
             createdAt: serverTimestamp(),
         };
 
@@ -96,7 +106,7 @@ export function AddPatientDialog() {
             description: `${data.name} has been added to your patient list.`,
         });
 
-        reset();
+        reset(patientSchema.partial().default({}));
         setOpen(false);
     });
   };
@@ -113,7 +123,7 @@ export function AddPatientDialog() {
         <DialogHeader>
           <DialogTitle>Add New Patient</DialogTitle>
           <DialogDescription>
-            Enter the details for the new patient.
+            Enter the details for the new patient. Click "Add Patient" to save. New patients are generated with random Arabic names.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-2">
