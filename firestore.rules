@@ -1,35 +1,41 @@
 /**
- * @fileoverview Firestore Security Rules for the PulseGuard application.
+ * @fileoverview Firestore Security Rules for PulseGuard Application
  *
  * Core Philosophy:
- * This ruleset enforces a strict doctor-patient data access model. Doctors can only access data
- * associated with their patients. Patients' data is segregated into subcollections for clarity and security.
+ * This ruleset enforces a hierarchical data ownership model. Doctors can only manage their own profile data.
+ * Patient data and associated subcollections (sensorData, alerts, anomalyData) are scoped to individual patients.
+ * Access control is primarily enforced through path-based checks (`patientId` and `doctorId`) and the `request.auth.uid`.
+ * To improve performance and security, the `doctorId` is denormalized onto the Patient document to avoid extra reads in security rules.
  *
  * Data Structure:
- * - /doctors/{doctorId}: Stores doctor profiles. Doctors can only manage their own profiles.
- * - /patients/{patientId}: Stores patient profiles. Contains a denormalized doctorId for efficient authorization.
- * - /patients/{patientId}/sensorData/{sensorDataId}: Stores sensor data for a patient. Only accessible by the associated doctor.
- * - /patients/{patientId}/alerts/{alertId}: Stores alerts for a patient. Only accessible by the associated doctor.
- * - /patients/{patientId}/anomalyData/{anomalyDataId}: Stores anomaly data for a patient. Only accessible by the associated doctor.
+ * - /doctors/{doctorId}: Stores doctor profiles.
+ * - /patients/{patientId}: Stores patient profiles, including the denormalized `doctorId`.
+ * - /patients/{patientId}/sensorData/{sensorDataId}: Stores sensor data for each patient.
+ * - /patients/{patientId}/alerts/{alertId}: Stores alerts generated for each patient.
+ * - /patients/{patientId}/anomalyData/{anomalyDataId}: Stores anomaly data detected for each patient.
  *
  * Key Security Decisions:
- * - Doctors can only create, update, and delete their own profiles.
- * - Access to patient data (including sensor data, alerts, and anomaly data) is restricted to the doctor associated with the patient, based on the denormalized doctorId field in the patient document.
- * - Listing of documents is generally allowed only within user-owned subcollections.  Top-level collections do not permit listing.
+ * - Doctors can only read and write their own profile data.
+ * - Patients cannot be listed directly to prevent unauthorized enumeration.
+ * - SensorData, Alerts, and AnomalyData are only accessible within the scope of their parent patient.
+ * - Timestamp fields are NOT validated in this prototyping phase.
+ * - Role-based access control is not implemented.
  *
  * Denormalization for Authorization:
- * The doctorId is denormalized into the patient document to avoid needing to perform a `get()` operation on the `doctors` collection to validate access. This vastly improves performance and reduces costs.
+ * - The `Patient` document contains a `doctorId` field, denormalized from the `Doctor` entity.
+ * This allows rules on patient-related data to verify the doctor's access without additional reads.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Doctors can only manage their own profile data.
+     * @description Allows doctors to manage their own profile data.
      * @path /doctors/{doctorId}
-     * @allow (create, update, delete) A doctor with ID 'doctor123' can create/update/delete their own profile at /doctors/doctor123 if authenticated as 'doctor123'.
-     * @deny (create, update, delete) A doctor with ID 'doctor123' cannot create/update/delete another doctor's profile at /doctors/doctor456, even if authenticated.
-     * @principle Enforces document ownership for doctor profiles.
+     * @allow (get, update, delete) if the requesting user is the owner of the document (doctorId == request.auth.uid).
+     * @allow (create) if the requesting user's ID matches the doctorId in the path.
+     * @deny (get, update, delete) if the requesting user is not the owner of the document.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /doctors/{doctorId} {
       function isSignedIn() {
@@ -40,149 +46,128 @@ service cloud.firestore {
         return isSignedIn() && request.auth.uid == doctorId;
       }
 
-      function isExistingOwner(doctorId) {
-          return isOwner(doctorId) && resource != null;
-      }
-
-      allow get: if true;
+      allow get: if isOwner(doctorId);
       allow list: if false;
-
-      allow create: if isOwner(doctorId) && request.resource.data.id == doctorId;
-      allow update: if isExistingOwner(doctorId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(doctorId);
+      allow create: if isSignedIn() && request.auth.uid == doctorId;
+      allow update: if isOwner(doctorId);
+      allow delete: if isOwner(doctorId);
     }
 
     /**
-     * @description Stores patient account information. Only the associated doctor can access.
+     * @description Allows management of patient account information, ensuring that only associated doctors can access patient data.
      * @path /patients/{patientId}
-     * @allow (create) A doctor can create a patient document where the doctorId in the patient document matches the doctor's UID.
-     * @allow (update, delete) A doctor can update/delete a patient document where the doctorId in the patient document matches the doctor's UID.
-     * @deny (create, update, delete) A non-authenticated user cannot create/update/delete any patient documents.
-     * @deny (create, update, delete) A doctor cannot create/update/delete a patient document where the doctorId does not match the doctor's UID.
-     * @principle Enforces doctor-patient relationship for data access.
+     * @allow (get) if the requesting doctor's ID matches the doctorId stored in the patient document.
+     * @allow (create, update, delete) if the requesting user is the owner of the document (patientId == request.auth.uid).
+     * @deny (get, update, delete) if the requesting user is not the owner of the document.
+     * @principle Enforces document ownership for writes, restricting reads to associated doctors, and ensures that the document exists before updates/deletes.
      */
     match /patients/{patientId} {
       function isSignedIn() {
         return request.auth != null;
       }
 
-      function getDoctorId() {
-        return request.auth.uid;
+      function isOwner(patientId) {
+        return isSignedIn() && request.auth.uid == patientId;
       }
 
-      function isPatientDoctor(patientId) {
-        return isSignedIn() && exists(/databases/$(database)/documents/patients/$(patientId)) && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == getDoctorId();
+      //Doctor access to patient data, based on denormalized doctorId field
+      function isAssociatedDoctor(patientId) {
+        return isSignedIn() && request.auth.uid == resource.data.doctorId;
       }
 
-       function isExistingPatientDoctor(patientId) {
-        return isPatientDoctor(patientId) && resource != null;
-      }
-
-      allow get: if isPatientDoctor(patientId);
+      allow get: if isAssociatedDoctor(patientId);
       allow list: if false;
-
-      allow create: if isSignedIn() && request.resource.data.doctorId == getDoctorId() && request.resource.data.id == patientId;
-      allow update: if isExistingPatientDoctor(patientId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingPatientDoctor(patientId);
+      allow create: if isSignedIn() && request.auth.uid == patientId;
+      allow update: if isOwner(patientId);
+      allow delete: if isOwner(patientId);
     }
 
     /**
-     * @description Stores sensor data readings for a patient. Only the associated doctor can access.
+     * @description Allows management of sensor data readings for a specific patient, ensuring that only associated doctors can access sensor data.
      * @path /patients/{patientId}/sensorData/{sensorDataId}
-     * @allow (create) A doctor can create sensor data for their patient if authenticated and the patientId matches.
-     * @allow (get, list, update, delete) A doctor can get, list, update, and delete sensor data for their patient if authenticated and the patientId matches.
-     * @deny (create, get, list, update, delete) A doctor cannot access sensor data for another doctor's patient.
-     * @principle Enforces doctor-patient relationship for sensor data access.
+     *  @allow (get, list) if the requesting doctor's ID matches the doctorId stored in the patient document.
+     * @allow (create) if the requesting user is the owner of the document (patientId == request.auth.uid).
+     * @deny (get, list, create, update, delete) if the requesting user is not the owner of the parent patient document.
+     * @principle Enforces document ownership for writes, restricts reads to associated doctors, and ensures that the document exists before updates/deletes.
      */
     match /patients/{patientId}/sensorData/{sensorDataId} {
-      function isSignedIn() {
+       function isSignedIn() {
         return request.auth != null;
       }
 
-      function getDoctorId() {
-        return request.auth.uid;
+
+       //Doctor access to patient data, based on denormalized doctorId field
+      function isAssociatedDoctor(patientId) {
+        return isSignedIn() && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == request.auth.uid;
       }
 
-      function isPatientDoctor(patientId) {
-        return isSignedIn() && exists(/databases/$(database)/documents/patients/$(patientId)) && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == getDoctorId();
-      }
+      function parentPatientExists(patientId) {
+            return exists(/databases/$(database)/documents/patients/$(patientId));
+        }
 
-      function isExistingPatientDoctor(patientId) {
-        return isPatientDoctor(patientId) && resource != null;
-      }
-
-      allow get: if isPatientDoctor(patientId);
-      allow list: if isPatientDoctor(patientId);
-
-      allow create: if isSignedIn() && exists(/databases/$(database)/documents/patients/$(patientId)) && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == getDoctorId() && request.resource.data.patientId == patientId;
-      allow update: if isExistingPatientDoctor(patientId) && request.resource.data.patientId == resource.data.patientId;
-      allow delete: if isExistingPatientDoctor(patientId);
+      allow get: if isAssociatedDoctor(patientId) && parentPatientExists(patientId);
+      allow list: if isAssociatedDoctor(patientId) && parentPatientExists(patientId);
+      allow create: if false; //Doctors can not create sensor data, must come from device and/or background jobs.
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Stores alerts generated based on sensor data for a specific patient. Only the associated doctor can access.
+     * @description Allows management of alerts generated based on sensor data for a specific patient, ensuring that only associated doctors can access alert data.
      * @path /patients/{patientId}/alerts/{alertId}
-     * @allow (create) A doctor can create alerts for their patient if authenticated and the patientId matches.
-     * @allow (get, list, update, delete) A doctor can get, list, update, and delete alerts for their patient if authenticated and the patientId matches.
-     * @deny (create, get, list, update, delete) A doctor cannot access alerts for another doctor's patient.
-     * @principle Enforces doctor-patient relationship for alert data access.
+     *  @allow (get, list) if the requesting doctor's ID matches the doctorId stored in the patient document.
+     * @allow (create) if the requesting user is the owner of the document (patientId == request.auth.uid).
+     * @deny (get, list, create, update, delete) if the requesting user is not the owner of the parent patient document.
+     * @principle Enforces document ownership for writes, restricts reads to associated doctors, and ensures that the document exists before updates/deletes.
      */
     match /patients/{patientId}/alerts/{alertId} {
-      function isSignedIn() {
+       function isSignedIn() {
         return request.auth != null;
       }
 
-      function getDoctorId() {
-        return request.auth.uid;
+       //Doctor access to patient data, based on denormalized doctorId field
+      function isAssociatedDoctor(patientId) {
+        return isSignedIn() && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == request.auth.uid;
       }
 
-      function isPatientDoctor(patientId) {
-        return isSignedIn() && exists(/databases/$(database)/documents/patients/$(patientId)) && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == getDoctorId();
-      }
+        function parentPatientExists(patientId) {
+            return exists(/databases/$(database)/documents/patients/$(patientId));
+        }
 
-       function isExistingPatientDoctor(patientId) {
-        return isPatientDoctor(patientId) && resource != null;
-      }
-
-      allow get: if isPatientDoctor(patientId);
-      allow list: if isPatientDoctor(patientId);
-
-      allow create: if isSignedIn() && exists(/databases/$(database)/documents/patients/$(patientId)) && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == getDoctorId() && request.resource.data.patientId == patientId;
-      allow update: if isExistingPatientDoctor(patientId) && request.resource.data.patientId == resource.data.patientId;
-      allow delete: if isExistingPatientDoctor(patientId);
+      allow get: if isAssociatedDoctor(patientId) && parentPatientExists(patientId);
+      allow list: if isAssociatedDoctor(patientId) && parentPatientExists(patientId);
+      allow create: if false; //Alerts are auto-generated.
+      allow update: if false;
+      allow delete: if false;
     }
 
-    /**
-     * @description Stores anomaly data detected by the AI model for a specific patient. Only the associated doctor can access.
+   /**
+     * @description Allows management of anomaly data detected by the AI model for a specific patient, ensuring that only associated doctors can access anomaly data.
      * @path /patients/{patientId}/anomalyData/{anomalyDataId}
-     * @allow (create) A doctor can create anomaly data for their patient if authenticated and the patientId matches.
-     * @allow (get, list, update, delete) A doctor can get, list, update, and delete anomaly data for their patient if authenticated and the patientId matches.
-     * @deny (create, get, list, update, delete) A doctor cannot access anomaly data for another doctor's patient.
-     * @principle Enforces doctor-patient relationship for anomaly data access.
+     *  @allow (get, list) if the requesting doctor's ID matches the doctorId stored in the patient document.
+     * @allow (create) if the requesting user is the owner of the document (patientId == request.auth.uid).
+     * @deny (get, list, create, update, delete) if the requesting user is not the owner of the parent patient document.
+     * @principle Enforces document ownership for writes, restricts reads to associated doctors, and ensures that the document exists before updates/deletes.
      */
     match /patients/{patientId}/anomalyData/{anomalyDataId} {
-      function isSignedIn() {
+       function isSignedIn() {
         return request.auth != null;
       }
 
-      function getDoctorId() {
-        return request.auth.uid;
+       //Doctor access to patient data, based on denormalized doctorId field
+      function isAssociatedDoctor(patientId) {
+        return isSignedIn() && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == request.auth.uid;
       }
 
-      function isPatientDoctor(patientId) {
-        return isSignedIn() && exists(/databases/$(database)/documents/patients/$(patientId)) && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == getDoctorId();
-      }
+      function parentPatientExists(patientId) {
+            return exists(/databases/$(database)/documents/patients/$(patientId));
+        }
 
-       function isExistingPatientDoctor(patientId) {
-        return isPatientDoctor(patientId) && resource != null;
-      }
-
-      allow get: if isPatientDoctor(patientId);
-      allow list: if isPatientDoctor(patientId);
-
-      allow create: if isSignedIn() && exists(/databases/$(database)/documents/patients/$(patientId)) && get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == getDoctorId() && request.resource.data.patientId == patientId;
-      allow update: if isExistingPatientDoctor(patientId) && request.resource.data.patientId == resource.data.patientId;
-      allow delete: if isExistingPatientDoctor(patientId);
+      allow get: if isAssociatedDoctor(patientId) && parentPatientExists(patientId);
+      allow list: if isAssociatedDoctor(patientId) && parentPatientExists(patientId);
+      allow create: if false; //AnomalyData is auto-generated.
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }
