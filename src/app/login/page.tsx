@@ -14,8 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { Logo } from '@/components/icons';
+import { FirebaseError } from 'firebase/app';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('e.reed@pulseguard.io');
@@ -36,12 +37,31 @@ export default function LoginPage() {
         });
         router.push('/');
       } catch (error) {
-        console.error('Login failed:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Invalid email or password. Please try again.',
-        });
+        if (error instanceof FirebaseError && (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential')) {
+          // If user does not exist, try creating a new user
+          try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            toast({
+              title: 'Account Created & Logged In',
+              description: 'Welcome, Doctor! A new account has been created for you.',
+            });
+            router.push('/');
+          } catch (createError) {
+             console.error('Sign up failed:', createError);
+             toast({
+                variant: 'destructive',
+                title: 'Sign-up Failed',
+                description: 'Could not create a new account. Please try again.',
+             });
+          }
+        } else {
+            console.error('Login failed:', error);
+            toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: 'An unexpected error occurred. Please try again.',
+            });
+        }
       }
     });
   };
@@ -84,7 +104,7 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? 'Logging in...' : 'Login'}
+              {isPending ? 'Logging in...' : 'Login / Sign Up'}
             </Button>
           </form>
         </CardContent>
