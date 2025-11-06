@@ -11,6 +11,8 @@ import type { Patient } from '@/lib/types';
 import type { PredictiveAnomalyDetectionOutput } from '@/ai/flows/predictive-anomaly-detection';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, limit, orderBy } from 'firebase/firestore';
 
 interface AnomalyDetectorProps {
   patient: Patient;
@@ -21,20 +23,40 @@ export function AnomalyDetector({ patient }: AnomalyDetectorProps) {
   const [result, setResult] = useState<PredictiveAnomalyDetectionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useAuth();
+
+  const sensorDataQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, `doctors/${user.uid}/patients/${patient.id}/sensorData`),
+      orderBy('timestamp', 'desc'),
+      limit(20)
+    );
+  }, [firestore, user, patient.id]);
+
+  const { data: sensorData } = useCollection(sensorDataQuery);
+
 
   const handleDetection = () => {
+    if (!sensorData) {
+        toast({ variant: "destructive", title: "No sensor data to analyze."});
+        return;
+    }
     setError(null);
     startTransition(async () => {
-      // For demonstration, we'll use the latest 20 readings.
-      const sensorData = patient.sensorData.slice(-20).map(d => ({
-        ...d,
+      const formattedSensorData = sensorData.map(d => ({
+        timestamp: d.timestamp,
         o2Level: Math.round(d.o2Level),
-        heartRate: Math.round(d.heartRate),
+        roomTemperature: d.temperature, // Assuming room and patient temp are the same for this model
+        patientTemperature: d.temperature,
+        heartRate: Math.round(d.heartbeat),
+        roomHumidity: d.humidity,
       }));
 
       const response = await runAnomalyDetection({
         patientId: patient.id,
-        sensorData,
+        sensorData: formattedSensorData,
         alertThreshold: 7, // Example threshold
       });
 
@@ -70,7 +92,7 @@ export function AnomalyDetector({ patient }: AnomalyDetectorProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={handleDetection} disabled={isPending} className="w-full">
+        <Button onClick={handleDetection} disabled={isPending || !sensorData || sensorData.length === 0} className="w-full">
           {isPending ? 'Analyzing...' : 'Run AI Analysis'}
         </Button>
 

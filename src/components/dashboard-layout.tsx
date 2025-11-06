@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  User
 } from "lucide-react";
 import {
   Sidebar,
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/sidebar";
 import { UserNav } from "@/components/user-nav";
 import { Logo } from "@/components/icons";
-import { Toaster } from "./ui/toaster";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -49,6 +49,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <Link href="/">
                   <LayoutDashboard />
                   <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/profile"}
+                tooltip="Profile"
+              >
+                <Link href="/profile">
+                  <User />
+                  <span>Profile</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

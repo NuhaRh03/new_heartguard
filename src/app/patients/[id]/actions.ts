@@ -12,7 +12,6 @@ export async function runAnomalyDetection(
     return { success: true, data: result };
   } catch (error) {
     console.error("Anomaly detection failed:", error);
-    // In a real app, you'd want more specific error handling
     if (error instanceof Error) {
         return { success: false, error: error.message };
     }

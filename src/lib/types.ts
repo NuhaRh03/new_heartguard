@@ -1,38 +1,36 @@
+
 export interface DoctorProfile {
   id: string;
   name: string;
+  dateOfBirth: string;
   age: number;
-  license: string;
-  email: string;
+  speciality: string;
+  idCardNumber: string;
 }
 
-export interface Patient {
+export interface PatientProfile {
   id: string;
   name: string;
-  age: number;
-  gender: 'Male' | 'Female' | 'Other';
-  doctorId: string;
-  contact: {
-    phone: string;
-    email: string;
-  };
-  emergencyContact: {
-    name: string;
-    relation: string;
-    phone: string;
-  };
-  medicalHistory: string[];
-  currentMedications: string[];
-  sensorData: SensorReading[];
+  dateOfBirth: string;
+  emergencyContactNumber: string;
+  historicalDisease: string;
+  medicines: string;
+  sensorData: SensorData[];
 }
 
-export interface SensorReading {
-  timestamp: string;
+// Re-using PatientProfile and naming it Patient for component compatibility
+export type Patient = PatientProfile;
+
+
+export interface SensorData {
+  id: string;
+  patientId: string;
   o2Level: number;
-  roomTemperature: number;
-  patientTemperature: number;
-  heartRate: number;
-  roomHumidity: number;
+  gazLevel: number;
+  heartbeat: number;
+  temperature: number;
+  humidity: number;
+  timestamp: string;
 }
 
 export interface PatientStatus {
@@ -40,11 +38,11 @@ export interface PatientStatus {
   label: string;
 }
 
-export const getPatientStatusFromReading = (reading: SensorReading): PatientStatus => {
-  if (reading.o2Level < 92 || reading.heartRate > 120 || reading.heartRate < 50 || reading.patientTemperature > 38.5) {
+export const getPatientStatusFromReading = (reading: SensorData): PatientStatus => {
+  if (reading.o2Level < 92 || reading.heartbeat > 120 || reading.heartbeat < 50 || reading.temperature > 38.5) {
     return { level: 'critical', label: 'Critical' };
   }
-  if (reading.o2Level < 95 || reading.heartRate > 100 || reading.heartRate < 60 || reading.patientTemperature > 37.8) {
+  if (reading.o2Level < 95 || reading.heartbeat > 100 || reading.heartbeat < 60 || reading.temperature > 37.8) {
     return { level: 'warning', label: 'Warning' };
   }
   return { level: 'stable', label: 'Stable' };

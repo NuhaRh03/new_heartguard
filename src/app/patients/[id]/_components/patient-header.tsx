@@ -1,4 +1,5 @@
 
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -11,7 +12,7 @@ interface PatientHeaderProps {
 export function PatientHeader({ patient }: PatientHeaderProps) {
   const latestReading = patient.sensorData?.[patient.sensorData.length - 1];
   const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
-  const patientImage = PlaceHolderImages.find(p => p.id === `patient-${patient.id % 4 + 1}`);
+  const patientImage = PlaceHolderImages.find(p => p.id === `patient-1`);
   
   return (
     <div className="flex items-center gap-4">
@@ -24,9 +25,7 @@ export function PatientHeader({ patient }: PatientHeaderProps) {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold">{patient.name}</h1>
         <div className="flex items-center gap-2 text-muted-foreground">
-          <span>{patient.age} years old</span>
-          <span>&bull;</span>
-          <span>{patient.gender}</span>
+          <span>{new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()} years old</span>
            <span>&bull;</span>
            <Badge
               variant={

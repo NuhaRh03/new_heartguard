@@ -6,7 +6,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import type { SensorReading } from "@/lib/types";
+import type { SensorData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Line, LineChart, XAxis, YAxis, CartesianGrid } from "recharts";
 
@@ -15,8 +15,8 @@ interface VitalCardProps {
   value: number;
   unit: string;
   Icon: React.ElementType;
-  data: SensorReading[];
-  dataKey: keyof SensorReading;
+  data: SensorData[];
+  dataKey: keyof SensorData;
   color: string;
   normalRange: [number, number];
 }
@@ -54,7 +54,7 @@ export function VitalCard({
                 isAbnormal ? "text-destructive" : ""
               )}
             >
-              {value.toFixed(dataKey === 'patientTemperature' ? 1 : 0)}
+              {value.toFixed(dataKey === 'temperature' ? 1 : 0)}
             </div>
             <p className="text-xs text-muted-foreground">{unit}</p>
           </div>
@@ -73,7 +73,7 @@ export function VitalCard({
                 <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent hideLabel />}
-                    formatter={(value) => `${value.toFixed(1)} ${unit}`}
+                    formatter={(value) => `${(value as number).toFixed(1)} ${unit}`}
                 />
                 <Line
                   dataKey={dataKey}

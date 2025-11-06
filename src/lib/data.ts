@@ -1,16 +1,16 @@
-import type { DoctorProfile, Patient, SensorReading, PatientStatus } from './types';
+import type { DoctorProfile, Patient, SensorData } from './types';
 import { subMinutes } from 'date-fns';
 
-export const doctorProfile: DoctorProfile = {
-  id: 'doc1',
+export const doctorProfile: Omit<DoctorProfile, 'id'> = {
   name: 'Dr. Evelyn Reed',
   age: 42,
-  license: 'MD-12345',
-  email: 'e.reed@pulseguard.io'
+  dateOfBirth: '1982-03-15',
+  speciality: 'Cardiology',
+  idCardNumber: 'DOC-12345'
 };
 
-export const generateSensorData = (count: number, baseline: Partial<SensorReading>): SensorReading[] => {
-  const data: SensorReading[] = [];
+export const generateSensorData = (count: number, baseline: Partial<SensorData>): SensorData[] => {
+  const data: SensorData[] = [];
   const now = new Date();
 
   for (let i = 0; i < count; i++) {
@@ -20,43 +20,15 @@ export const generateSensorData = (count: number, baseline: Partial<SensorReadin
     const isCritical = isAnomaly && Math.random() < 0.3;
 
     data.push({
+      id: `sensor-${i}`,
+      patientId: 'patient-1', // Mock patient ID
       timestamp,
-      o2Level: baseline.o2Level! + (isCritical ? -5 : isAnomaly ? -2 : 0) + (Math.random() * 2 - 1),
-      roomTemperature: baseline.roomTemperature! + (Math.random() * 0.5 - 0.25),
-      patientTemperature: baseline.patientTemperature! + (isCritical ? 1.5 : isAnomaly ? 0.8 : 0) + (Math.random() * 0.4 - 0.2),
-      heartRate: baseline.heartRate! + (isCritical ? 20 : isAnomaly ? 10 : 0) + (Math.random() * 6 - 3),
-      roomHumidity: baseline.roomHumidity! + (Math.random() * 2 - 1),
+      o2Level: (baseline.o2Level || 98) + (isCritical ? -5 : isAnomaly ? -2 : 0) + (Math.random() * 2 - 1),
+      temperature: (baseline.temperature || 37) + (isCritical ? 1.5 : isAnomaly ? 0.8 : 0) + (Math.random() * 0.4 - 0.2),
+      heartbeat: (baseline.heartbeat || 75) + (isCritical ? 20 : isAnomaly ? 10 : 0) + (Math.random() * 6 - 3),
+      humidity: (baseline.humidity || 45) + (Math.random() * 2 - 1),
+      gazLevel: (baseline.gazLevel || 0) + (Math.random() * 5),
     });
   }
   return data;
 };
-
-const arabicNames = [
-  "خالد الأحمد", "فاطمة العبدالله", "علي الحسن", "عائشة علي", "محمد محمد", "زينب السيد", "يوسف المحمود", "مريم الأحمد"
-];
-
-export const mockPatients: Patient[] = arabicNames.map((name, index) => ({
-    id: `patient-${index + 1}`,
-    name,
-    age: Math.floor(Math.random() * 60) + 20,
-    gender: Math.random() > 0.5 ? 'Male' : 'Female',
-    doctorId: 'doc1',
-    contact: {
-        phone: `555-01${Math.floor(Math.random() * 90) + 10}`,
-        email: `patient.${index + 1}@example.com`
-    },
-    emergencyContact: {
-        name: "قريب",
-        relation: "Friend",
-        phone: `555-02${Math.floor(Math.random() * 90) + 10}`
-    },
-    medicalHistory: ['Hypertension'],
-    currentMedications: ['Lisinopril'],
-    sensorData: generateSensorData(100, {
-        o2Level: 97,
-        roomTemperature: 22,
-        patientTemperature: 37.0,
-        heartRate: 75,
-        roomHumidity: 45,
-    }),
-}));
