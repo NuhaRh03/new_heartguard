@@ -1,0 +1,115 @@
+/**
+ * @fileOverview Firestore Security Rules for Doctor and Patient Profiles with Sensor Data.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model, where doctors can only access and manage data related to their own patients.
+ * Data is segregated based on the doctor's unique ID to prevent cross-doctor data access.
+ * All read and write operations are subject to authentication and authorization checks.
+ *
+ * Data Structure:
+ * - /doctors/{doctorId}: Stores doctor profile information.  The `doctorId` must match the authenticated user's UID.
+ * - /doctors/{doctorId}/patients/{patientId}: Stores patient profiles associated with a specific doctor.
+ * - /doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId}: Stores sensor data readings for a specific patient.
+ *
+ * Key Security Decisions:
+ * - Doctors can only create, read, update, and delete their own doctor profile.
+ * - Doctors can only manage patients and sensor data associated with their profile.
+ * - No public listing of doctors, patients, or sensor data is allowed to prevent unauthorized data access.
+ * - Data validation is relaxed to allow rapid prototyping.  Only critical fields for authorization (e.g., IDs) are validated.
+ *
+ * Denormalization for Authorization:
+ *  The data model is explicitly designed to avoid `get()` calls in the rules. The hierarchical structure ensures that access control can be enforced based solely on the document path and the authenticated user's UID.
+ *  For example, to create a patient for a doctor, the client must create the document under `/doctors/{doctorId}/patients/{patientId}`. The rules then enforce that the `doctorId` matches the authenticated user's UID.
+ *
+ * Structural Segregation:
+ *  The use of nested collections (/doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId}) ensures data is private to the owning doctor. There is no concept of public or shared data in this model.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to doctor profile documents.
+     * @path /doctors/{doctorId}
+     * @allow (create) User with UID 'user_abc' can create their own doctor profile at /doctors/user_abc with doctorId matching auth UID.
+     * @deny (create) User with UID 'user_abc' cannot create a doctor profile at /doctors/user_xyz.
+     * @allow (get, list) User with UID 'user_abc' can read their own doctor profile.
+     * @deny (get, list) User with UID 'user_abc' cannot read doctor profile of /doctors/user_xyz.
+     * @allow (update, delete) User with UID 'user_abc' can update/delete their own profile if it exists.
+     * @deny (update, delete) User with UID 'user_abc' cannot update/delete doctor profile of /doctors/user_xyz.
+     * @principle Enforces doctor-ownership for doctor profiles.
+     */
+    match /doctors/{doctorId} {
+      function isOwner(doctorId) {
+        return request.auth != null && request.auth.uid == doctorId;
+      }
+
+      function isExistingOwner(doctorId) {
+          return isOwner(doctorId) && resource != null;
+      }
+
+      allow get: if isOwner(doctorId);
+      allow list: if false; // Listing doctors is not permitted.
+
+      allow create: if isOwner(doctorId) && request.resource.data.id == doctorId;
+      allow update: if isExistingOwner(doctorId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(doctorId);
+    }
+
+    /**
+     * @description Controls access to patient profiles nested under a doctor's profile.
+     * @path /doctors/{doctorId}/patients/{patientId}
+     * @allow (create) Doctor 'doctor_abc' can create a new patient 'patient_xyz' under their profile.
+     * @deny (create) Doctor 'doctor_abc' cannot create a patient under doctor 'doctor_xyz' profile.
+     * @allow (get, list) Doctor 'doctor_abc' can read patients under their profile.
+     * @deny (get, list) Doctor 'doctor_abc' cannot list patients under the 'doctor_xyz' profile.
+     * @allow (update, delete) Doctor 'doctor_abc' can update/delete patient 'patient_xyz' under their profile if it exists.
+     * @deny (update, delete) Doctor 'doctor_abc' cannot update/delete patient profiles under 'doctor_xyz' profile.
+     * @principle Enforces doctor-ownership for patient profiles.
+     */
+    match /doctors/{doctorId}/patients/{patientId} {
+      function isOwner(doctorId) {
+        return request.auth != null && request.auth.uid == doctorId;
+      }
+
+      function isExistingOwner(doctorId) {
+        return isOwner(doctorId) && resource != null;
+      }
+
+      allow get: if isOwner(doctorId);
+      allow list: if isOwner(doctorId);
+
+      allow create: if isOwner(doctorId);
+      allow update: if isExistingOwner(doctorId);
+      allow delete: if isExistingOwner(doctorId);
+    }
+
+    /**
+     * @description Controls access to sensor data nested under a patient's profile.
+     * @path /doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId}
+     * @allow (create) Doctor 'doctor_abc' can create sensor data for patient 'patient_xyz' under their profile.
+     * @deny (create) Doctor 'doctor_abc' cannot create sensor data for patient 'patient_xyz' under doctor 'doctor_xyz' profile.
+     * @allow (get, list) Doctor 'doctor_abc' can read sensor data for patients under their profile.
+     * @deny (get, list) Doctor 'doctor_abc' cannot list sensor data under the 'doctor_xyz' profile.
+     * @allow (update, delete) Doctor 'doctor_abc' can update/delete sensor data for patient 'patient_xyz' under their profile if it exists.
+     * @deny (update, delete) Doctor 'doctor_abc' cannot update/delete sensor data under 'doctor_xyz' profile.
+     * @principle Enforces doctor-ownership for sensor data.
+     */
+    match /doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId} {
+      function isOwner(doctorId) {
+        return request.auth != null && request.auth.uid == doctorId;
+      }
+
+       function isExistingOwner(doctorId) {
+            return isOwner(doctorId) && resource != null;
+       }
+
+      allow get: if isOwner(doctorId);
+      allow list: if isOwner(doctorId);
+
+      allow create: if isOwner(doctorId);
+      allow update: if isExistingOwner(doctorId);
+      allow delete: if isExistingOwner(doctorId);
+    }
+  }
+}
