@@ -9,6 +9,17 @@ interface PatientHeaderProps {
   patient: Patient;
 }
 
+function calculateAge(dateOfBirth: string): number {
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export function PatientHeader({ patient }: PatientHeaderProps) {
   const latestReading = patient.sensorData?.[patient.sensorData.length - 1];
   const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
@@ -25,7 +36,7 @@ export function PatientHeader({ patient }: PatientHeaderProps) {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold">{patient.name}</h1>
         <div className="flex items-center gap-2 text-muted-foreground">
-          <span>{new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()} years old</span>
+          <span>{calculateAge(patient.dateOfBirth)} years old</span>
            <span>&bull;</span>
            <Badge
               variant={
