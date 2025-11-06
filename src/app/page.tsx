@@ -14,8 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { useCollection, useFirestore } from "@/firebase";
-import { collection, query } from "firebase/firestore";
+import { useCollection, useFirestore, useUser } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 import { useMemoFirebase } from "@/firebase/provider";
 import { AddPatientDialog } from "@/components/add-patient-dialog";
 import { Patient, getPatientStatusFromReading } from "@/lib/types";
@@ -24,11 +24,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function DashboardPage() {
   const patientImages = PlaceHolderImages.filter(p => p.id.startsWith('patient-'));
   const firestore = useFirestore();
+  const { user } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "patients"));
-  }, [firestore]);
+    if (!firestore || !user) return null;
+    return query(collection(firestore, "patients"), where("doctorId", "==", user.uid));
+  }, [firestore, user]);
 
   const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
 
@@ -40,7 +41,7 @@ export default function DashboardPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>All Patients</CardTitle>
+          <CardTitle>My Patients</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -75,7 +76,9 @@ export default function DashboardPage() {
               {!isLoading && patients?.map((patient, index) => {
                 const latestReading = patient.sensorData?.[patient.sensorData.length - 1];
                 const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
-                const patientImage = patientImages.find(img => img.id === `patient-${(patient.id.charCodeAt(0) % 4) + 1}`);
+                // Use a deterministic way to assign images based on patient ID
+                const imageIndex = parseInt(patient.id, 36) % patientImages.length;
+                const patientImage = patientImages[imageIndex];
 
                 return (
                   <TableRow key={patient.id}>
@@ -131,6 +134,12 @@ export default function DashboardPage() {
               })}
             </TableBody>
           </Table>
+           {!isLoading && patients?.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <h3 className="text-lg font-semibold">No Patients Found</h3>
+              <p className="text-sm">Click "Add Patient" to get started.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

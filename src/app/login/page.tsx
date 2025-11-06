@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useTransition } from 'react';
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,10 @@ export default function LoginPage() {
         setError(null);
         startTransition(async () => {
             try {
+                if (!auth) {
+                  setError("Auth service is not available. Please try again later.");
+                  return;
+                }
                 await signInWithEmailAndPassword(auth, email, password);
                 toast({
                     title: "Login Successful",
@@ -39,7 +42,7 @@ export default function LoginPage() {
                 router.push('/');
             } catch (err: any) {
                 console.error(err);
-                if (err.code === 'auth/invalid-credential') {
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
                     setError("Invalid email or password. Please try again.");
                 } else {
                     setError("An unexpected error occurred. Please try again later.");
@@ -69,6 +72,7 @@ export default function LoginPage() {
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             />
           </div>
           <div className="grid gap-2">
@@ -79,6 +83,7 @@ export default function LoginPage() {
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             />
           </div>
           {error && <p className="text-sm text-destructive text-center">{error}</p>}

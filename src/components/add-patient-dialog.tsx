@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useTransition } from "react";
 import {
@@ -24,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
@@ -54,6 +53,7 @@ export function AddPatientDialog() {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const {
@@ -71,12 +71,21 @@ export function AddPatientDialog() {
   });
 
   const onSubmit = (data: PatientFormData) => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "You must be logged in to add a patient.",
+        });
+        return;
+    }
+
     startTransition(() => {
         const patientData = {
             name: data.name,
             age: data.age,
             gender: data.gender,
-            doctorId: "doc1", // Hardcoded as there is no logged in user
+            doctorId: user.uid, 
             contact: {
                 phone: data.contactPhone,
                 email: data.contactEmail,

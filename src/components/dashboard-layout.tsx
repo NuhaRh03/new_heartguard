@@ -2,14 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Users,
-  HeartPulse,
-  Settings,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +19,6 @@ import {
 } from "@/components/ui/sidebar";
 import { UserNav } from "@/components/user-nav";
 import { Logo } from "@/components/icons";
-import { useUser } from "@/firebase";
 import { Toaster } from "./ui/toaster";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
