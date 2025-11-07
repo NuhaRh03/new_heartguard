@@ -97,6 +97,7 @@ export default function DashboardPage() {
                   const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
                   const imageIndex = index % patientImages.length;
                   const patientImage = patientImages[imageIndex];
+                  const age = calculateAge(patient.dateOfBirth);
 
                   return (
                     <TableRow key={patient.id}>
@@ -115,7 +116,7 @@ export default function DashboardPage() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {calculateAge(patient.dateOfBirth)}
+                        {age}
                       </TableCell>
                       <TableCell>
                         <Badge
