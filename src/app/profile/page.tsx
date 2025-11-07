@@ -3,17 +3,20 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Award, Mail, User, Cake, VenetianMask } from "lucide-react";
+import { Award, Mail, User, Cake } from "lucide-react";
 import { useAuth, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { DoctorProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { useState, useEffect } from "react";
 
 export default function ProfilePage() {
   const doctorImage = PlaceHolderImages.find(p => p.id === 'doctor-avatar');
   const { user } = useAuth();
   const firestore = useFirestore();
+  const [formattedDate, setFormattedDate] = useState<string | null>(null);
+
 
   const doctorDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -21,6 +24,12 @@ export default function ProfilePage() {
   },[firestore, user]);
 
   const { data: doctorProfile, isLoading } = useDoc<DoctorProfile>(doctorDocRef);
+
+  useEffect(() => {
+    if (doctorProfile?.dateOfBirth) {
+      setFormattedDate(new Date(doctorProfile.dateOfBirth).toLocaleDateString());
+    }
+  }, [doctorProfile]);
 
 
   if (isLoading || !doctorProfile) {
@@ -70,7 +79,7 @@ export default function ProfilePage() {
                   <Cake className="text-muted-foreground" />
                   <div>
                       <p className="text-sm text-muted-foreground">Date of Birth</p>
-                      <p className="font-semibold">{new Date(doctorProfile.dateOfBirth).toLocaleDateString()}</p>
+                      <p className="font-semibold">{formattedDate || '...'}</p>
                   </div>
               </div>
               <div className="flex items-center gap-4 p-3 rounded-md border bg-secondary/50">
