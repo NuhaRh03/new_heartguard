@@ -12,9 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, PlusCircle } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { AddPatientDialog } from "@/components/add-patient-dialog";
 import { Patient, getPatientStatusFromReading } from "@/lib/types";
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
@@ -32,12 +31,31 @@ export default function DashboardPage() {
 
   const { data: patients, isLoading } = useCollection<Omit<Patient, 'id'>>(patientsQuery);
 
+  const calculateAge = (dateOfBirth: string) => {
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+
   return (
     <DashboardLayout>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Patient Dashboard</h1>
-          {user && <AddPatientDialog doctorId={user.uid} />}
+          {user && (
+            <Button asChild>
+              <Link href="/patients/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Patient
+              </Link>
+            </Button>
+          )}
         </div>
         <Card>
           <CardHeader>
@@ -79,7 +97,7 @@ export default function DashboardPage() {
                 {!isLoading && patients?.map((patient, index) => {
                   const latestReading = patient.sensorData?.[patient.sensorData.length - 1];
                   const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
-                  const imageIndex = parseInt(patient.id.replace('patient-',''), 10) % patientImages.length;
+                  const imageIndex = index % patientImages.length;
                   const patientImage = patientImages[imageIndex];
 
                   return (
@@ -99,8 +117,7 @@ export default function DashboardPage() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {/* Age is not in the new schema, will use name length for variety */}
-                        {patient.name.length}
+                        {calculateAge(patient.dateOfBirth)}
                       </TableCell>
                       <TableCell>
                         <Badge
