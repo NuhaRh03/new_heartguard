@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, useAuth, useFirestore } from "@/firebase";
+import { addDocumentNonBlocking, useUser, useFirestore } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +32,7 @@ export default function AddPatientPage() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user: doctor } = useAuth();
+  const { user: doctor } = useUser();
   const router = useRouter();
 
   const {
