@@ -20,10 +20,10 @@ import { Patient } from "@/lib/types";
 
 const patientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
-  birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
-  emergencyContact: z.string().min(10, "Enter a valid phone number."),
-  historicalDiseases: z.string().optional(),
-  currentMedications: z.string().optional(),
+  date_of_birth: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
+  emergency_contact: z.string().min(10, "Enter a valid phone number."),
+  historical_diseases: z.string().optional(),
+  current_medications: z.string().optional(),
 });
 
 type PatientFormData = z.infer<typeof patientSchema>;
@@ -51,13 +51,14 @@ export default function AddPatientPage() {
     }
 
     startTransition(async () => {
-        const patientData: Omit<Patient, 'id'> = {
+        // This is an incomplete patient record according to your new schema
+        // It's missing `last_update` and `sensors` which should be added when sensors start
+        const patientData: Omit<Patient, 'id' | 'last_update' | 'sensors'> = {
             name: data.name,
-            birthDate: data.birthDate,
-            emergencyContact: data.emergencyContact,
-            historicalDiseases: data.historicalDiseases ? data.historicalDiseases.split(',').map(s => s.trim()).filter(Boolean) : [],
-            currentMedications: data.currentMedications ? data.currentMedications.split(',').map(s => s.trim()).filter(Boolean) : [],
-            createdAt: new Date().toISOString(),
+            date_of_birth: data.date_of_birth,
+            emergency_contact: data.emergency_contact,
+            historical_diseases: data.historical_diseases ? data.historical_diseases.split(',').map(s => s.trim()).filter(Boolean) : [],
+            current_medications: data.current_medications ? data.current_medications.split(',').map(s => s.trim()).filter(Boolean) : [],
             createdBy: doctor.uid,
         };
 
@@ -99,25 +100,25 @@ export default function AddPatientPage() {
                                 {errors.name && <p className="text-destructive text-sm mt-1">{errors.name.message}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="birthDate">Date of Birth</Label>
-                                <Input id="birthDate" type="date" {...register("birthDate")} />
-                                {errors.birthDate && <p className="text-destructive text-sm mt-1">{errors.birthDate.message}</p>}
+                                <Label htmlFor="date_of_birth">Date of Birth</Label>
+                                <Input id="date_of_birth" type="date" {...register("date_of_birth")} />
+                                {errors.date_of_birth && <p className="text-destructive text-sm mt-1">{errors.date_of_birth.message}</p>}
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="emergencyContact">Emergency Contact Number</Label>
-                            <Input id="emergencyContact" {...register("emergencyContact")} placeholder="e.g. +212612345678"/>
-                            {errors.emergencyContact && <p className="text-destructive text-sm mt-1">{errors.emergencyContact.message}</p>}
+                            <Label htmlFor="emergency_contact">Emergency Contact Number</Label>
+                            <Input id="emergency_contact" {...register("emergency_contact")} placeholder="e.g. +212612345678"/>
+                            {errors.emergency_contact && <p className="text-destructive text-sm mt-1">{errors.emergency_contact.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="historicalDiseases">Historical Diseases (comma-separated)</Label>
-                            <Textarea id="historicalDiseases" {...register("historicalDiseases")} placeholder="e.g., Diabetes, Asthma" />
-                            {errors.historicalDiseases && <p className="text-destructive text-sm mt-1">{errors.historicalDiseases.message}</p>}
+                            <Label htmlFor="historical_diseases">Historical Diseases (comma-separated)</Label>
+                            <Textarea id="historical_diseases" {...register("historical_diseases")} placeholder="e.g., Diabetes, Asthma" />
+                            {errors.historical_diseases && <p className="text-destructive text-sm mt-1">{errors.historical_diseases.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="currentMedications">Current Medications (comma-separated)</Label>
-                            <Textarea id="currentMedications" {...register("currentMedications")} placeholder="e.g., Metformin, Lisinopril" />
-                            {errors.currentMedications && <p className="text-destructive text-sm mt-1">{errors.currentMedications.message}</p>}
+                            <Label htmlFor="current_medications">Current Medications (comma-separated)</Label>
+                            <Textarea id="current_medications" {...register("current_medications")} placeholder="e.g., Metformin, Lisinopril" />
+                            {errors.current_medications && <p className="text-destructive text-sm mt-1">{errors.current_medications.message}</p>}
                         </div>
                         <div className="flex justify-end">
                             <Button type="submit" disabled={isPending}>

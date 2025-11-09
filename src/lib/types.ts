@@ -11,22 +11,26 @@ export interface DoctorProfile {
 export interface Patient {
   id: string;
   name: string;
-  birthDate: string;
-  emergencyContact: string;
-  historicalDiseases: string[];
-  currentMedications: string[];
-  createdAt: string;
+  date_of_birth: string;
+  emergency_contact: string;
+  historical_diseases: string[];
+  current_medications: string[];
+  last_update?: string; // or a Timestamp type if you prefer
   createdBy: string; // UID of the doctor who created the patient
+  sensors?: {
+    heart_beat: number;
+    humidity: number;
+    o2_level: number;
+    room_temperature: number;
+  };
 }
 
+// This is now part of the Patient type, but we can keep it for status calculation
 export interface SensorData {
-  id: string;
-  timestamp: string;
-  heartRate: number;
-  roomOxygen: number;
-  roomHumidity: number;
-  roomTemperature: number;
-  collectedBy: string; // UID of the doctor who collected the data
+  heart_beat: number;
+  o2_level: number;
+  room_temperature: number;
+  humidity: number;
 }
 
 
@@ -36,12 +40,10 @@ export interface PatientStatus {
 }
 
 export const getPatientStatusFromReading = (reading: SensorData): PatientStatus => {
-  // Note: These thresholds are examples. The new schema doesn't have patient-specific vitals like O2 level or temp.
-  // This function is now based on heartRate only.
-  if (reading.heartRate > 120 || reading.heartRate < 50) {
+  if (reading.heart_beat > 120 || reading.heart_beat < 50 || reading.o2_level < 90) {
     return { level: 'critical', label: 'Critical' };
   }
-  if (reading.heartRate > 100 || reading.heartRate < 60) {
+  if (reading.heart_beat > 100 || reading.heart_beat < 60 || reading.o2_level < 94) {
     return { level: 'warning', label: 'Warning' };
   }
   return { level: 'stable', label: 'Stable' };

@@ -6,17 +6,16 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import type { SensorData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Line, LineChart, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Line, LineChart, XAxis } from "recharts";
 
 interface VitalCardProps {
   title: string;
   value: number;
   unit: string;
   Icon: React.ElementType;
-  data: SensorData[];
-  dataKey: keyof SensorData;
+  data: any[]; // The data is now a single object in an array
+  dataKey: string;
   color: string;
   normalRange: [number, number];
 }
@@ -54,7 +53,7 @@ export function VitalCard({
                 isAbnormal ? "text-destructive" : ""
               )}
             >
-              {value.toFixed(dataKey === 'temperature' ? 1 : 0)}
+              {value.toFixed(1)}
             </div>
             <p className="text-xs text-muted-foreground">{unit}</p>
           </div>

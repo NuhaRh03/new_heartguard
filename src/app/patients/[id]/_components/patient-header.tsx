@@ -1,17 +1,18 @@
 
 
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { getPatientStatusFromReading, type Patient, SensorData } from "@/lib/types";
+import { getPatientStatusFromReading, type Patient, type SensorData } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 interface PatientHeaderProps {
   patient: Patient;
-  latestReading?: SensorData;
 }
 
 function calculateAge(birthDate: string): number {
+  if (!birthDate) return 0;
   const date = new Date(birthDate);
   const today = new Date();
   let age = today.getFullYear() - date.getFullYear();
@@ -22,16 +23,16 @@ function calculateAge(birthDate: string): number {
   return age;
 }
 
-export function PatientHeader({ patient, latestReading }: PatientHeaderProps) {
-  const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
+export function PatientHeader({ patient }: PatientHeaderProps) {
+  const status = patient.sensors ? getPatientStatusFromReading(patient.sensors as SensorData) : { level: 'unknown', label: 'No Data' };
   const patientImage = PlaceHolderImages.find(p => p.id === `patient-1`);
   const [age, setAge] = useState<number | null>(null);
 
   useEffect(() => {
-    if (patient.birthDate) {
-      setAge(calculateAge(patient.birthDate));
+    if (patient.date_of_birth) {
+      setAge(calculateAge(patient.date_of_birth));
     }
-  }, [patient.birthDate]);
+  }, [patient.date_of_birth]);
   
   return (
     <div className="flex items-center gap-4">

@@ -5,10 +5,10 @@ import { PatientHeader } from "./_components/patient-header";
 import { VitalsMonitor } from "./_components/vitals-monitor";
 import { PatientInfoCard } from "./_components/patient-info-card";
 import { AnomalyDetector } from "./_components/anomaly-detector";
-import type { Patient, SensorData } from "@/lib/types";
+import type { Patient } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDoc, useFirestore, useMemoFirebase, addDocumentNonBlocking, useCollection } from "@/firebase";
-import { doc, collection, query, orderBy, limit }from "firebase/firestore";
+import { useDoc, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
+import { doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -33,35 +33,26 @@ export default function PatientPage({ params }: PatientPageProps) {
 
   const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientDocRef);
 
-  // Fetch the latest sensor reading separately for the header status
-  const latestReadingQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !patient) return null;
-    return query(collection(firestore, `patients/${patient.id}/sensorData`), orderBy('timestamp', 'desc'), limit(1));
-  }, [firestore, user, patient]);
-
-  const { data: latestReadings } = useCollection<SensorData>(latestReadingQuery);
-  const latestReading = latestReadings?.[0];
-
   const handleStartSensors = () => {
-    if (!user || !patient) return;
+    if (!user || !patient || !patientDocRef) return;
 
     toast({
       title: "Sensors Activated",
       description: `Live sensor monitoring has started for ${patient.name}.`,
     });
 
-    // Example of adding a new sensor reading.
-    const sensorData: Omit<SensorData, 'id'> = {
-      timestamp: new Date().toISOString(),
-      heartRate: 75 + Math.round(Math.random() * 10 - 5),
-      roomOxygen: 20.9 + Math.random() * 0.2 - 0.1,
-      roomHumidity: 45 + Math.round(Math.random() * 10 - 5),
-      roomTemperature: 24 + Math.random() * 2 - 1,
-      collectedBy: user.uid,
+    const sensorData = {
+      heart_beat: 75 + Math.round(Math.random() * 10 - 5),
+      o2_level: 97 + Math.random() * 2 - 1,
+      humidity: 45 + Math.round(Math.random() * 10 - 5),
+      room_temperature: 24 + Math.random() * 2 - 1,
     };
     
-    const sensorDataCollection = collection(firestore, `patients/${patient.id}/sensorData`);
-    addDocumentNonBlocking(sensorDataCollection, sensorData);
+    // Update the patient document with the new sensor data map
+    updateDocumentNonBlocking(patientDocRef, {
+      sensors: sensorData,
+      last_update: new Date().toISOString()
+    });
   }
 
   if (isPatientLoading) {
@@ -95,16 +86,15 @@ export default function PatientPage({ params }: PatientPageProps) {
     notFound();
   }
 
-  // Security check: Make sure the logged-in user is the one who created the patient record.
   if (patient.createdBy !== user?.uid) {
-     notFound(); // Or show an "Access Denied" page
+     notFound();
   }
 
   return (
     <DashboardLayout>
       <div className="flex-1 space-y-6 p-4 md:p-8">
         <div className="flex justify-between items-start">
-          <PatientHeader patient={patient} latestReading={latestReading} />
+          <PatientHeader patient={patient} />
           <Button onClick={handleStartSensors}>
               <PlayCircle className="mr-2 h-4 w-4" />
               Start Sensors

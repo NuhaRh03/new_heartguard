@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Patient, getPatientStatusFromReading, SensorData } from "@/lib/types";
+import { Patient, getPatientStatusFromReading } from "@/lib/types";
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -26,7 +26,6 @@ export default function DashboardPage() {
 
   const patientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // Query the top-level 'patients' collection, filtered by the current doctor's UID.
     return query(collection(firestore, 'patients'), where('createdBy', '==', user.uid));
   }, [firestore, user]);
 
@@ -43,13 +42,6 @@ export default function DashboardPage() {
     }
     return age;
   };
-
-  // This is a placeholder. In a real app, you'd fetch the latest sensor reading.
-  const getLatestReading = (patient: Patient): SensorData | undefined => {
-    // This is a mock implementation because we don't have sensor data being added yet.
-    // To make this real, you would need a separate query for the sensorData subcollection.
-    return undefined; 
-  }
 
   return (
     <DashboardLayout>
@@ -101,11 +93,11 @@ export default function DashboardPage() {
                   </TableRow>
                 ))}
                 {!isLoading && patients?.map((patient, index) => {
-                  const latestReading = getLatestReading(patient);
+                  const latestReading = patient.sensors;
                   const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
                   const imageIndex = index % patientImages.length;
                   const patientImage = patientImages[imageIndex];
-                  const age = calculateAge(patient.birthDate);
+                  const age = calculateAge(patient.date_of_birth);
 
                   return (
                     <TableRow key={patient.id}>
@@ -141,13 +133,13 @@ export default function DashboardPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.heartRate ? `${latestReading.heartRate.toFixed(0)} bpm` : 'N/A'}
+                        {latestReading?.heart_beat ? `${latestReading.heart_beat.toFixed(0)} bpm` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.roomOxygen ? `${latestReading.roomOxygen.toFixed(1)}%` : 'N/A'}
+                        {latestReading?.o2_level ? `${latestReading.o2_level.toFixed(1)}%` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {latestReading?.roomTemperature ? latestReading.roomTemperature.toFixed(1) : 'N/A'}
+                        {latestReading?.room_temperature ? latestReading.room_temperature.toFixed(1) : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button asChild variant="ghost" size="sm">
