@@ -47,8 +47,8 @@ service cloud.firestore {
       // Only the doctor who created the patient can read, update, or delete it.
       allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
       
-      // Allow listing of patients. The application MUST enforce filtering by createdBy == request.auth.uid.
-      allow list: if request.auth != null;
+      // Allow listing of patients if the query is filtering by the doctor's UID.
+      allow list: if request.auth != null && request.query.get('where')[0][1] == 'createdBy' && request.query.get('where')[0][2] == request.auth.uid;
     }
 
     /**
