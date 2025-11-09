@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { VitalCard } from "./vital-card";
 import { Heart, Thermometer, Droplets } from "lucide-react";
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, limit, query, orderBy } from "firebase/firestore";
+import { collection, limit, query, orderBy, where } from "firebase/firestore";
 
 interface VitalsMonitorProps {
   patient: Patient;
@@ -29,7 +29,8 @@ export function VitalsMonitor({ patient }: VitalsMonitorProps) {
   const sensorDataQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
-      collection(firestore, `doctors/${user.uid}/patients/${patient.id}/sensorData`),
+      collection(firestore, `patients/${patient.id}/sensorData`),
+      where('collectedBy', '==', user.uid),
       orderBy('timestamp', 'desc'),
       limit(CHART_DATA_POINTS)
     );
@@ -58,58 +59,58 @@ export function VitalsMonitor({ patient }: VitalsMonitorProps) {
 
 
   if (!currentData) {
-    return <div>No vitals data available.</div>;
+    return <div>No vitals data available. Start sensors to see live data.</div>;
   }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <VitalCard
-        title="Heartbeat"
-        value={currentData.heartbeat}
+        title="Heart Rate"
+        value={currentData.heartRate}
         unit="bpm"
         Icon={Heart}
         data={reversedSensorData}
-        dataKey="heartbeat"
+        dataKey="heartRate"
         color="hsl(var(--chart-1))"
         normalRange={[60, 100]}
       />
       <VitalCard
-        title="O2 Saturation"
-        value={currentData.o2Level}
+        title="Room Oxygen"
+        value={currentData.roomOxygen}
         unit="%"
         Icon={O2Icon}
         data={reversedSensorData}
-        dataKey="o2Level"
+        dataKey="roomOxygen"
         color="hsl(var(--chart-2))"
-        normalRange={[95, 100]}
+        normalRange={[20, 22]}
       />
       <VitalCard
-        title="Temperature"
-        value={currentData.temperature}
+        title="Room Temperature"
+        value={currentData.roomTemperature}
         unit="°C"
         Icon={Thermometer}
         data={reversedSensorData}
-        dataKey="temperature"
+        dataKey="roomTemperature"
         color="hsl(var(--chart-3))"
-        normalRange={[36.5, 37.5]}
+        normalRange={[20, 25]}
       />
        <VitalCard
-        title="Humidity"
-        value={currentData.humidity}
+        title="Room Humidity"
+        value={currentData.roomHumidity}
         unit="%"
         Icon={Droplets}
         data={reversedSensorData}
-        dataKey="humidity"
+        dataKey="roomHumidity"
         color="hsl(var(--chart-4))"
         normalRange={[30, 60]}
       />
        <VitalCard
-        title="Gas Level"
-        value={currentData.gazLevel}
+        title="Gas Level (Placeholder)"
+        value={0}
         unit="ppm"
         Icon={GazIcon}
         data={reversedSensorData}
-        dataKey="gazLevel"
+        dataKey={"gazLevel" as any}
         color="hsl(var(--chart-5))"
         normalRange={[0, 10]}
       />

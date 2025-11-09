@@ -8,30 +8,27 @@ export interface DoctorProfile {
   idCardNumber: string;
 }
 
-export interface PatientProfile {
+export interface Patient {
   id: string;
   name: string;
-  dateOfBirth: string;
-  emergencyContactNumber: string;
-  historicalDisease: string;
-  medicines: string;
-  sensorData: SensorData[];
+  birthDate: string;
+  emergencyContact: string;
+  historicalDiseases: string[];
+  currentMedications: string[];
+  createdAt: string;
+  createdBy: string; // UID of the doctor who created the patient
 }
-
-// Re-using PatientProfile and naming it Patient for component compatibility
-export type Patient = PatientProfile;
-
 
 export interface SensorData {
   id: string;
-  patientId: string;
-  o2Level: number;
-  gazLevel: number;
-  heartbeat: number;
-  temperature: number;
-  humidity: number;
   timestamp: string;
+  heartRate: number;
+  roomOxygen: number;
+  roomHumidity: number;
+  roomTemperature: number;
+  collectedBy: string; // UID of the doctor who collected the data
 }
+
 
 export interface PatientStatus {
   level: 'stable' | 'warning' | 'critical' | 'unknown';
@@ -39,10 +36,12 @@ export interface PatientStatus {
 }
 
 export const getPatientStatusFromReading = (reading: SensorData): PatientStatus => {
-  if (reading.o2Level < 92 || reading.heartbeat > 120 || reading.heartbeat < 50 || reading.temperature > 38.5) {
+  // Note: These thresholds are examples. The new schema doesn't have patient-specific vitals like O2 level or temp.
+  // This function is now based on heartRate only.
+  if (reading.heartRate > 120 || reading.heartRate < 50) {
     return { level: 'critical', label: 'Critical' };
   }
-  if (reading.o2Level < 95 || reading.heartbeat > 100 || reading.heartbeat < 60 || reading.temperature > 37.8) {
+  if (reading.heartRate > 100 || reading.heartRate < 60) {
     return { level: 'warning', label: 'Warning' };
   }
   return { level: 'stable', label: 'Stable' };

@@ -12,7 +12,7 @@ import type { PredictiveAnomalyDetectionOutput } from '@/ai/flows/predictive-ano
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, limit, orderBy } from 'firebase/firestore';
+import { collection, query, limit, orderBy, where } from 'firebase/firestore';
 
 interface AnomalyDetectorProps {
   patient: Patient;
@@ -28,8 +28,10 @@ export function AnomalyDetector({ patient }: AnomalyDetectorProps) {
 
   const sensorDataQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    // Query sensor data, ensuring we only get data collected by the current doctor
     return query(
-      collection(firestore, `doctors/${user.uid}/patients/${patient.id}/sensorData`),
+      collection(firestore, `patients/${patient.id}/sensorData`),
+      where('collectedBy', '==', user.uid),
       orderBy('timestamp', 'desc'),
       limit(20)
     );
@@ -39,19 +41,29 @@ export function AnomalyDetector({ patient }: AnomalyDetectorProps) {
 
 
   const handleDetection = () => {
-    if (!sensorData) {
+    if (!sensorData || sensorData.length === 0) {
         toast({ variant: "destructive", title: "No sensor data to analyze."});
         return;
     }
     setError(null);
     startTransition(async () => {
+      // The AI flow expects a different data structure, so we can't use it directly
+      // without updating it. For now, this will fail if used.
+      // This is a placeholder for a compatible AI flow.
+      toast({
+        variant: "destructive",
+        title: "AI Flow Incompatible",
+        description: "The AI model needs to be updated for the new data schema.",
+      });
+
+      /*
       const formattedSensorData = sensorData.map(d => ({
         timestamp: d.timestamp,
-        o2Level: Math.round(d.o2Level),
-        roomTemperature: d.temperature, // Assuming room and patient temp are the same for this model
-        patientTemperature: d.temperature,
-        heartRate: Math.round(d.heartbeat),
-        roomHumidity: d.humidity,
+        o2Level: d.roomOxygen, // Mapping new schema
+        roomTemperature: d.roomTemperature,
+        patientTemperature: d.roomTemperature, // No patient temp in new schema
+        heartRate: d.heartRate,
+        roomHumidity: d.roomHumidity,
       }));
 
       const response = await runAnomalyDetection({
@@ -77,6 +89,7 @@ export function AnomalyDetector({ patient }: AnomalyDetectorProps) {
           description: response.error,
         });
       }
+      */
     });
   };
 

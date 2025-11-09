@@ -1,5 +1,5 @@
 'use client';
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { Patient } from "@/lib/types";
 
 
 const patientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
-  dateOfBirth: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
-  emergencyContactNumber: z.string().min(10, "Enter a valid phone number."),
-  historicalDisease: z.string().optional(),
-  medicines: z.string().optional(),
+  birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
+  emergencyContact: z.string().min(10, "Enter a valid phone number."),
+  historicalDiseases: z.string().optional(),
+  currentMedications: z.string().optional(),
 });
 
 type PatientFormData = z.infer<typeof patientSchema>;
@@ -50,12 +51,17 @@ export default function AddPatientPage() {
     }
 
     startTransition(async () => {
-        const patientData = {
-            ...data,
-            sensorData: [], // Start with no sensor data
+        const patientData: Omit<Patient, 'id'> = {
+            name: data.name,
+            birthDate: data.birthDate,
+            emergencyContact: data.emergencyContact,
+            historicalDiseases: data.historicalDiseases ? data.historicalDiseases.split(',').map(s => s.trim()).filter(Boolean) : [],
+            currentMedications: data.currentMedications ? data.currentMedications.split(',').map(s => s.trim()).filter(Boolean) : [],
+            createdAt: new Date().toISOString(),
+            createdBy: doctor.uid,
         };
 
-        const patientsCollection = collection(firestore, `doctors/${doctor.uid}/patients`);
+        const patientsCollection = collection(firestore, 'patients');
         await addDocumentNonBlocking(patientsCollection, patientData);
         
         toast({
@@ -93,25 +99,25 @@ export default function AddPatientPage() {
                                 {errors.name && <p className="text-destructive text-sm mt-1">{errors.name.message}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                                <Input id="dateOfBirth" type="date" {...register("dateOfBirth")} />
-                                {errors.dateOfBirth && <p className="text-destructive text-sm mt-1">{errors.dateOfBirth.message}</p>}
+                                <Label htmlFor="birthDate">Date of Birth</Label>
+                                <Input id="birthDate" type="date" {...register("birthDate")} />
+                                {errors.birthDate && <p className="text-destructive text-sm mt-1">{errors.birthDate.message}</p>}
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="emergencyContactNumber">Emergency Contact Number</Label>
-                            <Input id="emergencyContactNumber" {...register("emergencyContactNumber")} placeholder="e.g. (123) 456-7890"/>
-                            {errors.emergencyContactNumber && <p className="text-destructive text-sm mt-1">{errors.emergencyContactNumber.message}</p>}
+                            <Label htmlFor="emergencyContact">Emergency Contact Number</Label>
+                            <Input id="emergencyContact" {...register("emergencyContact")} placeholder="e.g. +212612345678"/>
+                            {errors.emergencyContact && <p className="text-destructive text-sm mt-1">{errors.emergencyContact.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="historicalDisease">Historical Diseases</Label>
-                            <Textarea id="historicalDisease" {...register("historicalDisease")} placeholder="e.g., Hypertension, Diabetes" />
-                            {errors.historicalDisease && <p className="text-destructive text-sm mt-1">{errors.historicalDisease.message}</p>}
+                            <Label htmlFor="historicalDiseases">Historical Diseases (comma-separated)</Label>
+                            <Textarea id="historicalDiseases" {...register("historicalDiseases")} placeholder="e.g., Diabetes, Asthma" />
+                            {errors.historicalDiseases && <p className="text-destructive text-sm mt-1">{errors.historicalDiseases.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="medicines">Current Medications</Label>
-                            <Textarea id="medicines" {...register("medicines")} placeholder="e.g., Lisinopril, Metformin" />
-                            {errors.medicines && <p className="text-destructive text-sm mt-1">{errors.medicines.message}</p>}
+                            <Label htmlFor="currentMedications">Current Medications (comma-separated)</Label>
+                            <Textarea id="currentMedications" {...register("currentMedications")} placeholder="e.g., Metformin, Lisinopril" />
+                            {errors.currentMedications && <p className="text-destructive text-sm mt-1">{errors.currentMedications.message}</p>}
                         </div>
                         <div className="flex justify-end">
                             <Button type="submit" disabled={isPending}>

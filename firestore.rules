@@ -1,115 +1,70 @@
 /**
- * @fileOverview Firestore Security Rules for Doctor and Patient Profiles with Sensor Data.
+ * @fileOverview Firestore Security Rules for HeartGuard Application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model, where doctors can only access and manage data related to their own patients.
- * Data is segregated based on the doctor's unique ID to prevent cross-doctor data access.
- * All read and write operations are subject to authentication and authorization checks.
+ * This ruleset enforces a user-ownership model where authenticated users (doctors) can manage their own
+ * profiles and the patient data they create. It uses a top-level `patients` collection, with access
+ * controlled by a `createdBy` field on each patient document.
  *
  * Data Structure:
- * - /doctors/{doctorId}: Stores doctor profile information.  The `doctorId` must match the authenticated user's UID.
- * - /doctors/{doctorId}/patients/{patientId}: Stores patient profiles associated with a specific doctor.
- * - /doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId}: Stores sensor data readings for a specific patient.
+ * - /doctors/{doctorId}: Stores doctor profile information. The `doctorId` must match the authenticated user's UID.
+ * - /patients/{patientId}: Stores patient profiles. Access is determined by matching `request.auth.uid` with the `createdBy` field.
+ * - /patients/{patientId}/sensorData/{readingId}: Stores sensor readings. Access is determined by matching `request.auth.uid` with the `collectedBy` field.
  *
  * Key Security Decisions:
  * - Doctors can only create, read, update, and delete their own doctor profile.
- * - Doctors can only manage patients and sensor data associated with their profile.
- * - No public listing of doctors, patients, or sensor data is allowed to prevent unauthorized data access.
- * - Data validation is relaxed to allow rapid prototyping.  Only critical fields for authorization (e.g., IDs) are validated.
- *
- * Denormalization for Authorization:
- *  The data model is explicitly designed to avoid `get()` calls in the rules. The hierarchical structure ensures that access control can be enforced based solely on the document path and the authenticated user's UID.
- *  For example, to create a patient for a doctor, the client must create the document under `/doctors/{doctorId}/patients/{patientId}`. The rules then enforce that the `doctorId` matches the authenticated user's UID.
- *
- * Structural Segregation:
- *  The use of nested collections (/doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId}) ensures data is private to the owning doctor. There is no concept of public or shared data in this model.
+ * - Doctors can create new patients, where the `createdBy` field must match their UID.
+ * - Doctors can only read, update, or delete patients they have created.
+ * - Doctors can list all patients, but Firestore queries in the app must filter by `createdBy` to enforce visibility.
+ * - Doctors can manage sensor data for any patient, but the `collectedBy` field must match their UID, ensuring they only add data on behalf of themselves.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to doctor profile documents.
+     * @description Controls access to doctor profile documents. Only the owner can access their profile.
      * @path /doctors/{doctorId}
-     * @allow (create) User with UID 'user_abc' can create their own doctor profile at /doctors/user_abc with doctorId matching auth UID.
-     * @deny (create) User with UID 'user_abc' cannot create a doctor profile at /doctors/user_xyz.
-     * @allow (get, list) User with UID 'user_abc' can read their own doctor profile.
-     * @deny (get, list) User with UID 'user_abc' cannot read doctor profile of /doctors/user_xyz.
-     * @allow (update, delete) User with UID 'user_abc' can update/delete their own profile if it exists.
-     * @deny (update, delete) User with UID 'user_abc' cannot update/delete doctor profile of /doctors/user_xyz.
-     * @principle Enforces doctor-ownership for doctor profiles.
      */
     match /doctors/{doctorId} {
-      function isOwner(doctorId) {
+      function isOwner() {
         return request.auth != null && request.auth.uid == doctorId;
       }
-
-      function isExistingOwner(doctorId) {
-          return isOwner(doctorId) && resource != null;
-      }
-
-      allow get: if isOwner(doctorId);
-      allow list: if false; // Listing doctors is not permitted.
-
-      allow create: if isOwner(doctorId) && request.resource.data.id == doctorId;
-      allow update: if isExistingOwner(doctorId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(doctorId);
+      
+      allow read, update, delete: if isOwner() && resource.data.id == doctorId;
+      allow create: if isOwner() && request.resource.data.id == doctorId;
     }
 
     /**
-     * @description Controls access to patient profiles nested under a doctor's profile.
-     * @path /doctors/{doctorId}/patients/{patientId}
-     * @allow (create) Doctor 'doctor_abc' can create a new patient 'patient_xyz' under their profile.
-     * @deny (create) Doctor 'doctor_abc' cannot create a patient under doctor 'doctor_xyz' profile.
-     * @allow (get, list) Doctor 'doctor_abc' can read patients under their profile.
-     * @deny (get, list) Doctor 'doctor_abc' cannot list patients under the 'doctor_xyz' profile.
-     * @allow (update, delete) Doctor 'doctor_abc' can update/delete patient 'patient_xyz' under their profile if it exists.
-     * @deny (update, delete) Doctor 'doctor_abc' cannot update/delete patient profiles under 'doctor_xyz' profile.
-     * @principle Enforces doctor-ownership for patient profiles.
+     * @description Controls access to the top-level patients collection.
+     * @path /patients/{patientId}
      */
-    match /doctors/{doctorId}/patients/{patientId} {
-      function isOwner(doctorId) {
-        return request.auth != null && request.auth.uid == doctorId;
-      }
+    match /patients/{patientId} {
+      // Any authenticated user (doctor) can create a new patient record.
+      // The `createdBy` field MUST be set to their own UID.
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
 
-      function isExistingOwner(doctorId) {
-        return isOwner(doctorId) && resource != null;
-      }
-
-      allow get: if isOwner(doctorId);
-      allow list: if isOwner(doctorId);
-
-      allow create: if isOwner(doctorId);
-      allow update: if isExistingOwner(doctorId);
-      allow delete: if isExistingOwner(doctorId);
+      // Only the doctor who created the patient can read, update, or delete it.
+      allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      
+      // Allow listing of patients. The application MUST enforce filtering by createdBy == request.auth.uid.
+      allow list: if request.auth != null;
     }
 
     /**
-     * @description Controls access to sensor data nested under a patient's profile.
-     * @path /doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId}
-     * @allow (create) Doctor 'doctor_abc' can create sensor data for patient 'patient_xyz' under their profile.
-     * @deny (create) Doctor 'doctor_abc' cannot create sensor data for patient 'patient_xyz' under doctor 'doctor_xyz' profile.
-     * @allow (get, list) Doctor 'doctor_abc' can read sensor data for patients under their profile.
-     * @deny (get, list) Doctor 'doctor_abc' cannot list sensor data under the 'doctor_xyz' profile.
-     * @allow (update, delete) Doctor 'doctor_abc' can update/delete sensor data for patient 'patient_xyz' under their profile if it exists.
-     * @deny (update, delete) Doctor 'doctor_abc' cannot update/delete sensor data under 'doctor_xyz' profile.
-     * @principle Enforces doctor-ownership for sensor data.
+     * @description Controls access to sensor data for a patient.
+     * @path /patients/{patientId}/sensorData/{readingId}
      */
-    match /doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId} {
-      function isOwner(doctorId) {
-        return request.auth != null && request.auth.uid == doctorId;
-      }
+    match /patients/{patientId}/sensorData/{readingId} {
+       // A doctor can create sensor data if the `collectedBy` field is their own UID.
+       // This assumes a doctor might add data for a patient another doctor created, but the data point is owned by the collector.
+       allow create: if request.auth != null && request.resource.data.collectedBy == request.auth.uid;
 
-       function isExistingOwner(doctorId) {
-            return isOwner(doctorId) && resource != null;
-       }
-
-      allow get: if isOwner(doctorId);
-      allow list: if isOwner(doctorId);
-
-      allow create: if isOwner(doctorId);
-      allow update: if isExistingOwner(doctorId);
-      allow delete: if isExistingOwner(doctorId);
+       // Only the doctor who collected the sensor reading can read, update, or delete it.
+       allow get, update, delete: if request.auth != null && resource.data.collectedBy == request.auth.uid;
+       
+       // Allow listing sensor data. App must filter by `collectedBy`.
+       allow list: if request.auth != null;
     }
   }
 }

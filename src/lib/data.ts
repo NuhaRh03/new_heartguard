@@ -9,8 +9,8 @@ export const doctorProfile: Omit<DoctorProfile, 'id'> = {
   idCardNumber: 'DOC-12345'
 };
 
-export const generateSensorData = (count: number, baseline: Partial<SensorData>): SensorData[] => {
-  const data: SensorData[] = [];
+export const generateSensorData = (count: number, baseline: Partial<SensorData>, doctorId: string): Omit<SensorData, 'id'>[] => {
+  const data: Omit<SensorData, 'id'>[] = [];
   const now = new Date();
 
   for (let i = 0; i < count; i++) {
@@ -20,14 +20,12 @@ export const generateSensorData = (count: number, baseline: Partial<SensorData>)
     const isCritical = isAnomaly && Math.random() < 0.3;
 
     data.push({
-      id: `sensor-${i}`,
-      patientId: 'patient-1', // Mock patient ID
       timestamp,
-      o2Level: (baseline.o2Level || 98) + (isCritical ? -5 : isAnomaly ? -2 : 0) + (Math.random() * 2 - 1),
-      temperature: (baseline.temperature || 37) + (isCritical ? 1.5 : isAnomaly ? 0.8 : 0) + (Math.random() * 0.4 - 0.2),
-      heartbeat: (baseline.heartbeat || 75) + (isCritical ? 20 : isAnomaly ? 10 : 0) + (Math.random() * 6 - 3),
-      humidity: (baseline.humidity || 45) + (Math.random() * 2 - 1),
-      gazLevel: (baseline.gazLevel || 0) + (Math.random() * 5),
+      heartRate: (baseline.heartRate || 75) + (isCritical ? 20 : isAnomaly ? 10 : 0) + (Math.random() * 6 - 3),
+      roomOxygen: (baseline.roomOxygen || 20.9) + (isCritical ? -1 : isAnomaly ? -0.5 : 0) + (Math.random() * 0.2 - 0.1),
+      roomHumidity: (baseline.roomHumidity || 45) + (Math.random() * 10 - 5),
+      roomTemperature: (baseline.roomTemperature || 24) + (isCritical ? 1.5 : isAnomaly ? 0.8 : 0) + (Math.random() * 0.4 - 0.2),
+      collectedBy: doctorId,
     });
   }
   return data;

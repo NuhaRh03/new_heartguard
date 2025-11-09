@@ -14,9 +14,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Patient, getPatientStatusFromReading } from "@/lib/types";
+import { Patient, getPatientStatusFromReading, SensorData } from "@/lib/types";
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
 
 export default function DashboardPage() {
@@ -26,22 +26,30 @@ export default function DashboardPage() {
 
   const patientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, `doctors/${user.uid}/patients`);
+    // Query the top-level 'patients' collection, filtered by the current doctor's UID.
+    return query(collection(firestore, 'patients'), where('createdBy', '==', user.uid));
   }, [firestore, user]);
 
-  const { data: patients, isLoading } = useCollection<Omit<Patient, 'id'>>(patientsQuery);
+  const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
 
-  const calculateAge = (dateOfBirth: string) => {
-    const birthDate = new Date(dateOfBirth);
+  const calculateAge = (birthDate: string) => {
+    if (!birthDate) return 0;
+    const birth = new Date(birthDate);
     const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
     return age;
   };
 
+  // This is a placeholder. In a real app, you'd fetch the latest sensor reading.
+  const getLatestReading = (patient: Patient): SensorData | undefined => {
+    // This is a mock implementation because we don't have sensor data being added yet.
+    // To make this real, you would need a separate query for the sensorData subcollection.
+    return undefined; 
+  }
 
   return (
     <DashboardLayout>
@@ -93,11 +101,11 @@ export default function DashboardPage() {
                   </TableRow>
                 ))}
                 {!isLoading && patients?.map((patient, index) => {
-                  const latestReading = patient.sensorData?.[patient.sensorData.length - 1];
+                  const latestReading = getLatestReading(patient);
                   const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
                   const imageIndex = index % patientImages.length;
                   const patientImage = patientImages[imageIndex];
-                  const age = calculateAge(patient.dateOfBirth);
+                  const age = calculateAge(patient.birthDate);
 
                   return (
                     <TableRow key={patient.id}>
@@ -133,13 +141,13 @@ export default function DashboardPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.heartbeat ? `${latestReading.heartbeat.toFixed(0)} bpm` : 'N/A'}
+                        {latestReading?.heartRate ? `${latestReading.heartRate.toFixed(0)} bpm` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.o2Level ? `${latestReading.o2Level.toFixed(0)}%` : 'N/A'}
+                        {latestReading?.roomOxygen ? `${latestReading.roomOxygen.toFixed(1)}%` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {latestReading?.temperature ? latestReading.temperature.toFixed(1) : 'N/A'}
+                        {latestReading?.roomTemperature ? latestReading.roomTemperature.toFixed(1) : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button asChild variant="ghost" size="sm">

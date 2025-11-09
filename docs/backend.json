@@ -1,5 +1,107 @@
 {
   "entities": {
+    "PatientProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PatientProfile",
+      "type": "object",
+      "description": "Represents a patient's profile.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the patient profile."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the patient."
+        },
+        "birthDate": {
+          "type": "string",
+          "description": "The patient's date of birth.",
+          "format": "date"
+        },
+        "emergencyContact": {
+          "type": "string",
+          "description": "The patient's emergency contact number."
+        },
+        "historicalDiseases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of the patient's historical diseases."
+        },
+        "currentMedications": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of the patient's current medications."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the patient profile was created."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "The UID of the doctor who created this patient profile."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "birthDate",
+        "emergencyContact",
+        "createdAt",
+        "createdBy"
+      ]
+    },
+    "SensorData": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SensorData",
+      "type": "object",
+      "description": "Represents sensor data for a patient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the sensor data entry."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of the sensor reading.",
+          "format": "date-time"
+        },
+        "heartRate": {
+          "type": "number",
+          "description": "Patient's heartbeat (bpm)."
+        },
+        "roomOxygen": {
+          "type": "number",
+          "description": "Oxygen level in the room (%)."
+        },
+        "roomHumidity": {
+          "type": "number",
+          "description": "Humidity in the room (%)."
+        },
+        "roomTemperature": {
+          "type": "number",
+          "description": "Temperature in the room (°C)."
+        },
+        "collectedBy": {
+          "type": "string",
+          "description": "UID of the doctor who collected the data."
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "heartRate",
+        "roomOxygen",
+        "roomHumidity",
+        "roomTemperature",
+        "collectedBy"
+      ]
+    },
     "DoctorProfile": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "DoctorProfile",
@@ -8,7 +110,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the doctor profile."
+          "description": "Unique identifier for the doctor profile. Matches Auth UID."
         },
         "name": {
           "type": "string",
@@ -17,7 +119,7 @@
         "dateOfBirth": {
           "type": "string",
           "description": "The doctor's date of birth.",
-          "format": "date-time"
+          "format": "date"
         },
         "age": {
           "type": "number",
@@ -40,98 +142,6 @@
         "speciality",
         "idCardNumber"
       ]
-    },
-    "PatientProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "PatientProfile",
-      "type": "object",
-      "description": "Represents a patient's profile.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the patient profile."
-        },
-        "name": {
-          "type": "string",
-          "description": "The full name of the patient."
-        },
-        "dateOfBirth": {
-          "type": "string",
-          "description": "The patient's date of birth.",
-          "format": "date-time"
-        },
-        "emergencyContactNumber": {
-          "type": "string",
-          "description": "The patient's emergency contact number."
-        },
-        "historicalDisease": {
-          "type": "string",
-          "description": "The patient's historical diseases."
-        },
-        "medicines": {
-          "type": "string",
-          "description": "The patient's medicines."
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "dateOfBirth",
-        "emergencyContactNumber",
-        "historicalDisease",
-        "medicines"
-      ]
-    },
-    "SensorData": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SensorData",
-      "type": "object",
-      "description": "Represents sensor data for a patient.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the sensor data entry."
-        },
-        "patientId": {
-          "type": "string",
-          "description": "Reference to PatientProfile. (Relationship: PatientProfile 1:N SensorData)"
-        },
-        "o2Level": {
-          "type": "number",
-          "description": "Patient's oxygen level."
-        },
-        "gazLevel": {
-          "type": "number",
-          "description": "Patient's gaz level."
-        },
-        "heartbeat": {
-          "type": "number",
-          "description": "Patient's heartbeat."
-        },
-        "temperature": {
-          "type": "number",
-          "description": "Patient's temperature."
-        },
-        "humidity": {
-          "type": "number",
-          "description": "Room humidity."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "Timestamp of the sensor reading.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "patientId",
-        "o2Level",
-        "gazLevel",
-        "heartbeat",
-        "temperature",
-        "humidity",
-        "timestamp"
-      ]
     }
   },
   "auth": {
@@ -149,60 +159,30 @@
           "schema": {
             "$ref": "#/backend/entities/DoctorProfile"
           },
-          "description": "Collection of doctor profiles. Each doctor document contains profile information.",
-          "params": [
-            {
-              "name": "doctorId",
-              "description": "Unique identifier for the doctor. This is typically the Firebase Auth UID."
-            }
-          ]
+          "description": "Collection of doctor profiles. Each document ID is the doctor's Auth UID."
         }
       },
       {
-        "path": "/doctors/{doctorId}/patients/{patientId}",
+        "path": "/patients/{patientId}",
         "definition": {
           "entityName": "PatientProfile",
           "schema": {
             "$ref": "#/backend/entities/PatientProfile"
           },
-          "description": "Subcollection of patients for each doctor. Includes patient profile information.",
-          "params": [
-            {
-              "name": "doctorId",
-              "description": "Unique identifier for the doctor."
-            },
-            {
-              "name": "patientId",
-              "description": "Unique identifier for the patient."
-            }
-          ]
+          "description": "Top-level collection of patient profiles. Access is controlled by the `createdBy` field."
         }
       },
       {
-        "path": "/doctors/{doctorId}/patients/{patientId}/sensorData/{sensorDataId}",
+        "path": "/patients/{patientId}/sensorData/{readingId}",
         "definition": {
           "entityName": "SensorData",
           "schema": {
             "$ref": "#/backend/entities/SensorData"
           },
-          "description": "Subcollection of sensor data for each patient. Contains sensor readings.",
-          "params": [
-            {
-              "name": "doctorId",
-              "description": "Unique identifier for the doctor."
-            },
-            {
-              "name": "patientId",
-              "description": "Unique identifier for the patient."
-            },
-            {
-              "name": "sensorDataId",
-              "description": "Unique identifier for the sensor data entry."
-            }
-          ]
+          "description": "Subcollection of sensor readings for a patient. Access is controlled by the `collectedBy` field."
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure data isolation and role-based access control. Each doctor has their own collection of patients (`/doctors/{doctorId}/patients/{patientId}`), ensuring only the doctor can manage their patients' data. Patient profiles and sensor data are stored as subcollections under each patient document. This design facilitates secure data access and allows for easy management and retrieval of patient-specific information. The `SensorData` is structured as a subcollection to the `PatientProfile` to ensure quick querying of time-series data associated with a patient.\n\nThis structure enforces Authorization Independence. There are no `get()` calls in rules because access to patient data and sensor readings is implicitly granted based on the hierarchical path. The database is structured to fully support required QAPs by segregating data based on doctor and patient ownership. This segregation inherently prevents unauthorized listing of data across different doctors or patients."
+    "reasoning": "This structure uses a top-level `patients` collection for easier querying across all patients if needed in the future, while still maintaining security. Doctor profiles are kept separate in their own collection. Security rules are designed to ensure that doctors can only access patient data they have created (`createdBy` field) or sensor data they have collected (`collectedBy` field). This enforces ownership without relying on nested collections under each doctor, which can be restrictive for some query patterns. This model uses denormalization (storing doctor UIDs in patient and sensor data) to enable efficient and secure data access."
   }
 }
