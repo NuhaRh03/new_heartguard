@@ -9,14 +9,14 @@
  * Data Structure:
  * - /doctors/{doctorId}: Stores doctor profile information. The `doctorId` must match the authenticated user's UID.
  * - /patients/{patientId}: Stores patient profiles. Access is determined by matching `request.auth.uid` with the `createdBy` field.
- * - /patients/{patientId}/sensorData/{readingId}: Stores sensor readings. Access is determined by matching `request.auth.uid` with the `collectedBy` field.
+ * - /patients/{patientId}/sensorData/{readingId}: This subcollection is no longer used in the updated schema.
  *
  * Key Security Decisions:
  * - Doctors can only create, read, update, and delete their own doctor profile.
  * - Doctors can create new patients, where the `createdBy` field must match their UID.
  * - Doctors can only read, update, or delete patients they have created.
- * - Doctors can list all patients, but Firestore queries in the app must filter by `createdBy` to enforce visibility.
- * - Doctors can manage sensor data for any patient, but the `collectedBy` field must match their UID, ensuring they only add data on behalf of themselves.
+ * - Doctors can list patients, but only if the query specifically filters for patients created by them.
+ * - Sensor data is now a map within the patient document, so its security is inherited from the parent patient document.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -47,24 +47,9 @@ service cloud.firestore {
       // Only the doctor who created the patient can read, update, or delete it.
       allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
       
-      // Allow listing of patients if the query is filtering by the doctor's UID.
-      allow list: if request.auth != null && request.query.get('where')[0][1] == 'createdBy' && request.query.get('where')[0][2] == request.auth.uid;
-    }
-
-    /**
-     * @description Controls access to sensor data for a patient.
-     * @path /patients/{patientId}/sensorData/{readingId}
-     */
-    match /patients/{patientId}/sensorData/{readingId} {
-       // A doctor can create sensor data if the `collectedBy` field is their own UID.
-       // This assumes a doctor might add data for a patient another doctor created, but the data point is owned by the collector.
-       allow create: if request.auth != null && request.resource.data.collectedBy == request.auth.uid;
-
-       // Only the doctor who collected the sensor reading can read, update, or delete it.
-       allow get, update, delete: if request.auth != null && resource.data.collectedBy == request.auth.uid;
-       
-       // Allow listing sensor data. App must filter by `collectedBy`.
-       allow list: if request.auth != null;
+      // Allow listing of patients only if the query is explicitly filtering by the doctor's own UID.
+      // This is a critical security measure to prevent listing all patients.
+      allow list: if request.auth != null && request.query.filters.size() == 1 && request.query.filters[0].field.string_value == 'createdBy' && request.query.filters[0].value.string_value == request.auth.uid;
     }
   }
 }
