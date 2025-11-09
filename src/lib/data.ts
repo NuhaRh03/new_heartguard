@@ -30,3 +30,33 @@ export const generateSensorData = (count: number, baseline: Partial<SensorReadin
   }
   return data;
 };
+
+const arabicNames = [
+  "خالد الأحمد", "فاطمة العبدالله", "علي الحسن", "عائشة علي", "محمد محمد", "زينب السيد", "يوسف المحمود", "مريم الأحمد"
+];
+
+export const mockPatients: Patient[] = arabicNames.map((name, index) => ({
+    id: `patient-${index + 1}`,
+    name,
+    age: Math.floor(Math.random() * 60) + 20,
+    gender: Math.random() > 0.5 ? 'Male' : 'Female',
+    doctorId: 'doc1',
+    contact: {
+        phone: `555-01${Math.floor(Math.random() * 90) + 10}`,
+        email: `patient.${index + 1}@example.com`
+    },
+    emergencyContact: {
+        name: "قريب",
+        relation: "Friend",
+        phone: `555-02${Math.floor(Math.random() * 90) + 10}`
+    },
+    medicalHistory: ['Hypertension'],
+    currentMedications: ['Lisinopril'],
+    sensorData: generateSensorData(100, {
+        o2Level: 97,
+        roomTemperature: 22,
+        patientTemperature: 37.0,
+        heartRate: 75,
+        roomHumidity: 45,
+    }),
+}));

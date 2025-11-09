@@ -23,11 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFirestore, useUser } from "@/firebase";
-import { collection, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { generateSensorData } from "@/lib/data";
+import type { Patient } from "@/lib/types";
 
 
 const arabicName = () => {
@@ -49,11 +46,14 @@ const patientSchema = z.object({
 
 type PatientFormData = z.infer<typeof patientSchema>;
 
-export function AddPatientDialog() {
+interface AddPatientDialogProps {
+  onPatientAdd: (patient: Omit<Patient, 'id' | 'sensorData'>) => void;
+}
+
+
+export function AddPatientDialog({ onPatientAdd }: AddPatientDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const firestore = useFirestore();
-  const { user } = useUser();
   const { toast } = useToast();
 
   const {
@@ -71,21 +71,12 @@ export function AddPatientDialog() {
   });
 
   const onSubmit = (data: PatientFormData) => {
-    if (!user) {
-        toast({
-            variant: "destructive",
-            title: "Authentication Error",
-            description: "You must be logged in to add a patient.",
-        });
-        return;
-    }
-
     startTransition(() => {
         const patientData = {
             name: data.name,
             age: data.age,
             gender: data.gender,
-            doctorId: user.uid, 
+            doctorId: "doc1", 
             contact: {
                 phone: data.contactPhone,
                 email: data.contactEmail,
@@ -97,18 +88,9 @@ export function AddPatientDialog() {
             },
             medicalHistory: [], // Default empty values
             currentMedications: [],
-            sensorData: generateSensorData(100, {
-                o2Level: 97,
-                roomTemperature: 22,
-                patientTemperature: 37.0,
-                heartRate: 75,
-                roomHumidity: 45,
-            }),
-            createdAt: serverTimestamp(),
         };
 
-        const patientsCollection = collection(firestore, 'patients');
-        addDocumentNonBlocking(patientsCollection, patientData);
+        onPatientAdd(patientData);
         
         toast({
             title: "Patient Added",

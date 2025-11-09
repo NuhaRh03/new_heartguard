@@ -62,7 +62,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <UserNav />
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
-        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );

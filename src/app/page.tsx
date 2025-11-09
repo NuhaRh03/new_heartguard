@@ -14,30 +14,31 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
-import { useMemoFirebase } from "@/firebase/provider";
 import { AddPatientDialog } from "@/components/add-patient-dialog";
 import { Patient, getPatientStatusFromReading } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
+import { mockPatients } from "@/lib/data";
+import { useState } from "react";
 
 export default function DashboardPage() {
   const patientImages = PlaceHolderImages.filter(p => p.id.startsWith('patient-'));
-  const firestore = useFirestore();
-  const { user } = useUser();
+  const [patients, setPatients] = useState<Patient[]>(mockPatients);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const patientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, "patients"), where("doctorId", "==", user.uid));
-  }, [firestore, user]);
+  const addPatient = (patient: Omit<Patient, 'id' | 'sensorData'>) => {
+    const newPatient: Patient = {
+      ...patient,
+      id: `patient-${patients.length + 1}`,
+      sensorData: [],
+    };
+    setPatients(prev => [...prev, newPatient]);
+  }
 
-  const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Patient Dashboard</h1>
-        <AddPatientDialog />
+        <AddPatientDialog onPatientAdd={addPatient} />
       </div>
       <Card>
         <CardHeader>
@@ -61,23 +62,26 @@ export default function DashboardPage() {
                 <TableRow key={i}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <Skeleton className="h-4 w-24" />
+                      <Avatar>
+                        <AvatarImage />
+                        <AvatarFallback>...</AvatarFallback>
+                      </Avatar>
+                      <div className="font-medium">Loading...</div>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-8" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                  <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
+                  <TableCell className="hidden md:table-cell">...</TableCell>
+                  <TableCell><Badge>Loading...</Badge></TableCell>
+                  <TableCell className="hidden lg:table-cell">...</TableCell>
+                  <TableCell className="hidden lg:table-cell">...</TableCell>
+                  <TableCell className="hidden md:table-cell">...</TableCell>
+                  <TableCell className="text-right"><Button variant="ghost" size="sm" disabled>View</Button></TableCell>
                 </TableRow>
               ))}
               {!isLoading && patients?.map((patient, index) => {
                 const latestReading = patient.sensorData?.[patient.sensorData.length - 1];
                 const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
                 // Use a deterministic way to assign images based on patient ID
-                const imageIndex = parseInt(patient.id, 36) % patientImages.length;
+                const imageIndex = parseInt(patient.id.replace('patient-',''), 10) % patientImages.length;
                 const patientImage = patientImages[imageIndex];
 
                 return (

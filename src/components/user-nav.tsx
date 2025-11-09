@@ -9,37 +9,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth, useUser } from "@/firebase";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from 'next/link';
 import { LogOut } from "lucide-react";
-import { signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { doctorProfile } from "@/lib/data";
 
 export function UserNav() {
   const doctorImage = PlaceHolderImages.find(p => p.id === 'doctor-avatar');
-  const { user } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/login');
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
-      });
-    } catch (error) {
-      console.error("Logout failed", error);
-       toast({
-        variant: "destructive",
-        title: "Logout Failed",
-        description: "An error occurred while logging out.",
-      });
-    }
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
   };
 
 
@@ -48,17 +32,17 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={doctorImage?.imageUrl} alt={user?.displayName || ''} data-ai-hint={doctorImage?.imageHint} />
-            <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarImage src={doctorImage?.imageUrl} alt={doctorProfile.name || ''} data-ai-hint={doctorImage?.imageHint} />
+            <AvatarFallback>{doctorProfile.name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user?.displayName || "Doctor"}</p>
+            <p className="text-sm font-medium leading-none">{doctorProfile.name || "Doctor"}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user?.email}
+              {doctorProfile.email}
             </p>
           </div>
         </DropdownMenuLabel>
