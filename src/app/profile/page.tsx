@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Award, Mail, User, Cake } from "lucide-react";
-import { useAuth, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { DoctorProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { useState, useEffect } from "react";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const firestore = useFirestore();
   const [formattedDate, setFormattedDate] = useState<string | null>(null);
 
