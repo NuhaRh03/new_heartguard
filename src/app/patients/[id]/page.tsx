@@ -82,10 +82,6 @@ export default function PatientPage() {
     notFound();
   }
 
-  if (patient.createdBy !== user?.uid) {
-     notFound();
-  }
-
   return (
     <DashboardLayout>
       <div className="flex-1 space-y-6 p-4 md:p-8">
