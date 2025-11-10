@@ -9,14 +9,12 @@
  * Data Structure:
  * - /doctors/{doctorId}: Stores doctor profile information. The `doctorId` must match the authenticated user's UID.
  * - /patients/{patientId}: Stores patient profiles. Access is determined by matching `request.auth.uid` with the `createdBy` field.
- * - /patients/{patientId}/sensorData/{readingId}: This subcollection is no longer used in the updated schema.
  *
  * Key Security Decisions:
  * - Doctors can only create, read, update, and delete their own doctor profile.
  * - Doctors can create new patients, where the `createdBy` field must match their UID.
  * - Doctors can only read, update, or delete patients they have created.
  * - Doctors can list patients, but only if the query specifically filters for patients created by them.
- * - Sensor data is now a map within the patient document, so its security is inherited from the parent patient document.
  */
 rules_version = '2';
 service cloud.firestore {
