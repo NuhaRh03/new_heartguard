@@ -7,8 +7,8 @@ import { PatientInfoCard } from "./_components/patient-info-card";
 import { AnomalyDetector } from "./_components/anomaly-detector";
 import type { Patient } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDoc, useFirestore, useMemoFirebase, updateDocumentNonBlocking, useUser } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +28,7 @@ export default function PatientPage() {
 
   const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientDocRef);
 
-  const handleStartSensors = () => {
+  const handleStartSensors = async () => {
     if (!user || !patient || !patientDocRef) return;
 
     toast({
@@ -44,7 +44,7 @@ export default function PatientPage() {
     };
     
     // Update the patient document with the new sensor data map
-    updateDocumentNonBlocking(patientDocRef, {
+    await updateDoc(patientDocRef, {
       sensors: sensorData,
       last_update: new Date().toISOString()
     });
