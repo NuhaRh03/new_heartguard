@@ -25,16 +25,7 @@ service cloud.firestore {
     // --- Doctors -----------------------------------------------------------
     // /doctors/{doctorId} is owned by the user whose UID == doctorId
     match /doctors/{doctorId} {
-      // Create own profile; optional "id" field must match doc id if present
-      allow create: if isSelf(doctorId)
-                    && (!('id' in request.resource.data) || request.resource.data.id == doctorId);
-
-      // Read/update/delete own profile; keep "id" consistent if you store it
-      allow read, update, delete: if isSelf(doctorId)
-                    && (!('id' in request.resource.data) || request.resource.data.id == doctorId);
-
-      // Admins may do anything here (optional)
-      allow read, write: if isAdmin();
+      allow read, write: if isSelf(doctorId) || isAdmin();
     }
 
     // --- Patients ----------------------------------------------------------
@@ -43,13 +34,8 @@ service cloud.firestore {
       // Create: the doctor must set themselves as owner
       allow create: if createdByIsSelf() || isAdmin();
 
-      // Read: only the owner (or admin) can read this patient
-      // NOTE: this condition applies to both get() and queries (lists)
-      allow read: if (signedIn() && resource.data.createdBy == request.auth.uid) || isAdmin();
-
-      // Update/delete: only owner can modify, and owner cannot be changed
-      allow update, delete: if (signedIn() && resource.data.createdBy == request.auth.uid && ownerUnchanged())
-                            || isAdmin();
+      // Read, Update, Delete: only the owner (or admin) can read or modify
+      allow read, update, delete: if (signedIn() && resource.data.createdBy == request.auth.uid) || isAdmin();
     }
 
     // --- Optional public/admin spaces you had before -----------------------
