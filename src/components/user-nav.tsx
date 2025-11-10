@@ -13,7 +13,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from 'next/link';
 import { LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
@@ -22,7 +22,7 @@ export function UserNav() {
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user } = useUser();
 
   const handleLogout = async () => {
     try {
