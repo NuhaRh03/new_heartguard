@@ -7,12 +7,11 @@ import { PatientInfoCard } from "./_components/patient-info-card";
 import { AnomalyDetector } from "./_components/anomaly-detector";
 import type { Patient } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDoc, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
+import { useDoc, useFirestore, useMemoFirebase, updateDocumentNonBlocking, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/firebase";
 import { DashboardLayout } from "@/components/dashboard-layout";
 
 export default function PatientPage() {
@@ -23,7 +22,7 @@ export default function PatientPage() {
   const patientId = params.id as string;
 
   const patientDocRef = useMemoFirebase(() => {
-      if (!firestore || !user) return null;
+      if (!firestore || !user || !patientId) return null;
       return doc(firestore, `patients/${patientId}`);
   }, [firestore, user, patientId]);
 
