@@ -85,8 +85,18 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
-        const path = (memoizedTargetRefOrQuery as CollectionReference).path || (memoizedTargetRefOrQuery as any)._query.collectionGroup || 'unknown path';
+        let path = 'unknown path';
+        // This logic extracts the path from either a ref or a query safely
+        if ('path' in memoizedTargetRefOrQuery) {
+            path = (memoizedTargetRefOrQuery as CollectionReference).path;
+        } else if ('_query' in memoizedTargetRefOrQuery) {
+            const internalQuery = memoizedTargetRefOrQuery as any;
+            if (internalQuery._query?.path?.segments) {
+                path = internalQuery._query.path.segments.join('/');
+            } else if (internalQuery._query?.collectionGroup) {
+                path = `Collection Group: ${internalQuery._query.collectionGroup}`;
+            }
+        }
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
