@@ -21,7 +21,7 @@ import { Patient } from "@/lib/types";
 const patientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
-  emergency_contact: z.string().min(10, "Enter a valid phone number."),
+  emergencyContact: z.string().min(10, "Enter a valid phone number."),
   historical_diseases: z.string().optional(),
   current_medications: z.string().optional(),
 });
@@ -45,7 +45,7 @@ export default function AddPatientPage() {
     defaultValues: {
       name: "Maria Garcia",
       birthDate: "1988-05-20",
-      emergency_contact: "+212698765432",
+      emergencyContact: "+212698765432",
       historical_diseases: "Hypertension",
       current_medications: "Amlodipine"
     }
@@ -63,7 +63,7 @@ export default function AddPatientPage() {
         const patientData: Omit<Patient, 'id' | 'last_update' | 'sensors'> = {
             name: data.name,
             birthDate: data.birthDate,
-            emergency_contact: data.emergency_contact,
+            emergencyContact: data.emergencyContact,
             historical_diseases: data.historical_diseases ? data.historical_diseases.split(',').map(s => s.trim()).filter(Boolean) : [],
             current_medications: data.current_medications ? data.current_medications.split(',').map(s => s.trim()).filter(Boolean) : [],
             createdBy: doctor.uid,
@@ -80,7 +80,7 @@ export default function AddPatientPage() {
         reset({
           name: "David Johnson",
           birthDate: "1975-11-10",
-          emergency_contact: "+212611223344",
+          emergencyContact: "+212611223344",
           historical_diseases: "Diabetes Type 2",
           current_medications: "Metformin"
         });
@@ -119,9 +119,9 @@ export default function AddPatientPage() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="emergency_contact">Emergency Contact Number</Label>
-                            <Input id="emergency_contact" {...register("emergency_contact")} placeholder="e.g. +212612345678"/>
-                            {errors.emergency_contact && <p className="text-destructive text-sm mt-1">{errors.emergency_contact.message}</p>}
+                            <Label htmlFor="emergencyContact">Emergency Contact Number</Label>
+                            <Input id="emergencyContact" {...register("emergencyContact")} placeholder="e.g. +212612345678"/>
+                            {errors.emergencyContact && <p className="text-destructive text-sm mt-1">{errors.emergencyContact.message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="historical_diseases">Historical Diseases (comma-separated)</Label>

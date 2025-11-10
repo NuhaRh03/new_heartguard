@@ -12,7 +12,7 @@ export interface Patient {
   id: string;
   name: string;
   birthDate: string;
-  emergency_contact: string;
+  emergencyContact: string;
   historical_diseases: string[];
   current_medications: string[];
   last_update?: string; // or a Timestamp type if you prefer

@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Table,
@@ -30,7 +31,7 @@ export default function DashboardPage() {
   const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
 
   const calculateAge = (birthDate: string) => {
-    if (!birthDate) return 0;
+    if (!birthDate) return NaN;
     const birth = new Date(birthDate);
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
@@ -110,7 +111,7 @@ export default function DashboardPage() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {age}
+                        {isNaN(age) ? 'N/A' : age}
                       </TableCell>
                       <TableCell>
                         <Badge

@@ -28,7 +28,7 @@ export function PatientInfoCard({ patient }: PatientInfoCardProps) {
       <CardContent className="space-y-6">
         <div className="space-y-4">
             <h3 className="font-semibold flex items-center gap-2"><User size={16} /> Contact Details</h3>
-            <InfoRow icon={<Phone size={14}/>} label="Emergency Contact" value={patient.emergency_contact} />
+            <InfoRow icon={<Phone size={14}/>} label="Emergency Contact" value={patient.emergencyContact} />
         </div>
         
         {patient.historical_diseases && patient.historical_diseases.length > 0 && (
