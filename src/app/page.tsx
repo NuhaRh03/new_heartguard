@@ -15,27 +15,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
 import { Patient, getPatientStatusFromReading } from "@/lib/types";
-import { useUser, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
+import { useUser, useFirestore } from "@/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useEffect, useState } from "react";
-
-
-async function debugFetchPatients(db: any, uid: string) {
-  const q = query(collection(db, "patients"), where("createdBy", "==", uid));
-
-  // one-shot
-  const snap = await getDocs(q);
-  console.log("[HG] patients count", snap.size);
-  snap.docs.slice(0, 3).forEach((d, i) => {
-    console.log(`[HG] doc${i}`, d.id, d.data());
-  });
-
-  // live
-  return onSnapshot(q, s => {
-    console.log("[HG] snapshot", s.size, "docs");
-  });
-}
 
 
 export default function DashboardPage() {
@@ -46,12 +29,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user && firestore) {
-      debugFetchPatients(firestore, user.uid);
-
       const q = query(collection(firestore, 'patients'), where('createdBy', '==', user.uid));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const patientData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
         setPatients(patientData);
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Error fetching patients:", error);
         setIsLoading(false);
       });
 
