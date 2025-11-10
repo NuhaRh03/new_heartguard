@@ -16,19 +16,48 @@ import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
 import { Patient, getPatientStatusFromReading } from "@/lib/types";
 import { useUser, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { useEffect, useState } from "react";
+
+
+async function debugFetchPatients(db: any, uid: string) {
+  const q = query(collection(db, "patients"), where("createdBy", "==", uid));
+
+  // one-shot
+  const snap = await getDocs(q);
+  console.log("[HG] patients count", snap.size);
+  snap.docs.slice(0, 3).forEach((d, i) => {
+    console.log(`[HG] doc${i}`, d.id, d.data());
+  });
+
+  // live
+  return onSnapshot(q, s => {
+    console.log("[HG] snapshot", s.size, "docs");
+  });
+}
+
 
 export default function DashboardPage() {
   const firestore = useFirestore();
   const { user } = useUser();
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const patientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'patients'), where('createdBy', '==', user.uid));
-  }, [firestore, user]);
+  useEffect(() => {
+    if (user && firestore) {
+      debugFetchPatients(firestore, user.uid);
 
-  const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
+      const q = query(collection(firestore, 'patients'), where('createdBy', '==', user.uid));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const patientData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
+        setPatients(patientData);
+        setIsLoading(false);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [user, firestore]);
 
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return NaN;
@@ -133,7 +162,7 @@ export default function DashboardPage() {
                         {latestReading?.heart_beat ? `${latestReading.heart_beat.toFixed(0)} bpm` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.o2_level ? `${latestReading.o2_level.toFixed(1)}%` : 'N/A'}
+                        {latestReading?.o2_level ? `${latestReading.o2_level.toFixed(1)}%` : 'N-A'}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         {latestReading?.room_temperature ? latestReading.room_temperature.toFixed(1) : 'N/A'}
