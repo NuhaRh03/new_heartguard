@@ -64,9 +64,7 @@ export default function PatientPage() {
           </div>
           <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
             <div className="space-y-6 md:col-span-3 lg:col-span-3">
-               <div className="grid gap-4 md:grid-cols-2">
-                  {Array.from({length: 4}).map((_,i) => <Skeleton key={i} className="h-[126px] w-full" />)}
-               </div>
+               <Skeleton className="h-[300px] w-full" />
             </div>
             <div className="space-y-6 lg:col-span-1">
               <Skeleton className="h-[200px] w-full" />
@@ -95,7 +93,7 @@ export default function PatientPage() {
           </Button>
         </div>
         <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
-          <div className="space-y-6 md:col-span-3 lg:col-span-3">
+          <div className="md:col-span-3 lg:col-span-3">
             <VitalsMonitor patient={patient} />
           </div>
           <div className="space-y-6 lg:col-span-1">
