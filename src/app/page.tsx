@@ -15,14 +15,14 @@ import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Patient, getPatientStatusFromReading } from "@/lib/types";
-import { useAuth, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useUser, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
 
 export default function DashboardPage() {
   const patientImages = PlaceHolderImages.filter(p => p.id.startsWith('patient-'));
   const firestore = useFirestore();
-  const { user } = useAuth();
+  const { user } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
