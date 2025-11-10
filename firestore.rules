@@ -49,7 +49,7 @@ service cloud.firestore {
       
       // Allow listing of patients only if the query is explicitly filtering by the doctor's own UID.
       // This is a critical security measure to prevent listing all patients.
-      allow list: if request.auth != null && request.query.where.get("createdBy")[2] == request.auth.uid;
+      allow list: if request.auth != null && request.query.where.createdBy == request.auth.uid;
     }
   }
 }
