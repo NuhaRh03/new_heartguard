@@ -13,10 +13,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { Logo } from '@/components/icons';
 import { FirebaseError } from 'firebase/app';
+import { doc } from 'firebase/firestore';
+import type { DoctorProfile } from '@/lib/types';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('e.reed@pulseguard.io');
@@ -25,6 +27,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
 
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -38,9 +41,24 @@ export default function LoginPage() {
         router.push('/');
       } catch (error) {
         if (error instanceof FirebaseError && (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential')) {
-          // If user does not exist, try creating a new user
           try {
-            await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Create a doctor profile document in Firestore
+            const doctorDocRef = doc(firestore, 'doctors', user.uid);
+            const newDoctorProfile: DoctorProfile = {
+                id: user.uid,
+                name: 'New Doctor',
+                dateOfBirth: new Date().toISOString().split('T')[0], // Default to today
+                age: 30, // Default age
+                speciality: 'General Practice', // Default specialty
+                idCardNumber: `DOC-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+            };
+            
+            // Use non-blocking write
+            setDocumentNonBlocking(doctorDocRef, newDoctorProfile, {});
+
             toast({
               title: 'Account Created & Logged In',
               description: 'Welcome, Doctor! A new account has been created for you.',
