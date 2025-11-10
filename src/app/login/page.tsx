@@ -13,11 +13,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { Logo } from '@/components/icons';
 import { FirebaseError } from 'firebase/app';
-import { doc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import type { DoctorProfile } from '@/lib/types';
 
 export default function LoginPage() {
@@ -56,8 +56,8 @@ export default function LoginPage() {
                 idCardNumber: `DOC-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
             };
             
-            // Use non-blocking write
-            setDocumentNonBlocking(doctorDocRef, newDoctorProfile, {});
+            // Use standard setDoc and await it
+            await setDoc(doctorDocRef, newDoctorProfile);
 
             toast({
               title: 'Account Created & Logged In',
