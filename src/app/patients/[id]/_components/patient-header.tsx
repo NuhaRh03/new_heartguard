@@ -26,10 +26,10 @@ export function PatientHeader({ patient }: PatientHeaderProps) {
   const [age, setAge] = useState<number | null>(null);
 
   useEffect(() => {
-    if (patient.date_of_birth) {
-      setAge(calculateAge(patient.date_of_birth));
+    if (patient.birthDate) {
+      setAge(calculateAge(patient.birthDate));
     }
-  }, [patient.date_of_birth]);
+  }, [patient.birthDate]);
   
   return (
     <div className="flex items-center gap-4">

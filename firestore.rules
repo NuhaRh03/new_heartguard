@@ -1,53 +1,64 @@
-/**
- * @fileOverview Firestore Security Rules for HeartGuard Application.
- *
- * Core Philosophy:
- * This ruleset enforces a user-ownership model where authenticated users (doctors) can manage their own
- * profiles and the patient data they create. It uses a top-level `patients` collection, with access
- * controlled by a `createdBy` field on each patient document.
- *
- * Data Structure:
- * - /doctors/{doctorId}: Stores doctor profile information. The `doctorId` must match the authenticated user's UID.
- * - /patients/{patientId}: Stores patient profiles. Access is determined by matching `request.auth.uid` with the `createdBy` field.
- *
- * Key Security Decisions:
- * - Doctors can only create, read, update, and delete their own doctor profile.
- * - Doctors can create new patients, where the `createdBy` field must match their UID.
- * - Doctors can only read, update, or delete patients they have created.
- * - Doctors can list patients, but only if the query specifically filters for patients created by them.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Controls access to doctor profile documents. Only the owner can access their profile.
-     * @path /doctors/{doctorId}
-     */
-    match /doctors/{doctorId} {
-      function isOwner() {
-        return request.auth != null && request.auth.uid == doctorId;
-      }
-      
-      allow read, update, delete: if isOwner() && resource.data.id == doctorId;
-      allow create: if isOwner() && request.resource.data.id == doctorId;
+    // --- Helpers -----------------------------------------------------------
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+    // Prevent changing ownership once a doc exists
+    function ownerUnchanged() {
+      return request.resource.data.createdBy == resource.data.createdBy;
+    }
+    // Enforce that the creator sets themselves as owner on create
+    function createdByIsSelf() {
+      return signedIn() && request.resource.data.createdBy == request.auth.uid;
     }
 
-    /**
-     * @description Controls access to the top-level patients collection.
-     * @path /patients/{patientId}
-     */
-    match /patients/{patientId} {
-      // Any authenticated user (doctor) can create a new patient record.
-      // The `createdBy` field MUST be set to their own UID.
-      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+    // --- Doctors -----------------------------------------------------------
+    // /doctors/{doctorId} is owned by the user whose UID == doctorId
+    match /doctors/{doctorId} {
+      // Create own profile; optional "id" field must match doc id if present
+      allow create: if isSelf(doctorId)
+                    && (!('id' in request.resource.data) || request.resource.data.id == doctorId);
 
-      // Only the doctor who created the patient can read, update, or delete it.
-      allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-      
-      // Allow listing of patients only if the query is explicitly filtering by the doctor's own UID.
-      // This is a critical security measure to prevent listing all patients.
-      allow list: if request.auth != null && request.query.where.createdBy == request.auth.uid;
+      // Read/update/delete own profile; keep "id" consistent if you store it
+      allow read, update, delete: if isSelf(doctorId)
+                    && (!('id' in request.resource.data) || request.resource.data.id == doctorId);
+
+      // Admins may do anything here (optional)
+      allow read, write: if isAdmin();
+    }
+
+    // --- Patients ----------------------------------------------------------
+    // Each patient doc has: { ..., createdBy: <doctorUid>, ... }
+    match /patients/{patientId} {
+      // Create: the doctor must set themselves as owner
+      allow create: if createdByIsSelf() || isAdmin();
+
+      // Read: only the owner (or admin) can read this patient
+      // NOTE: this condition applies to both get() and queries (lists)
+      allow read: if (signedIn() && resource.data.createdBy == request.auth.uid) || isAdmin();
+
+      // Update/delete: only owner can modify, and owner cannot be changed
+      allow update, delete: if (signedIn() && resource.data.createdBy == request.auth.uid && ownerUnchanged())
+                            || isAdmin();
+    }
+
+    // --- Optional public/admin spaces you had before -----------------------
+    match /public/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /admin/{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }

@@ -11,7 +11,7 @@ export interface DoctorProfile {
 export interface Patient {
   id: string;
   name: string;
-  date_of_birth: string;
+  birthDate: string;
   emergency_contact: string;
   historical_diseases: string[];
   current_medications: string[];

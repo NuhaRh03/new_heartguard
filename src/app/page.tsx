@@ -92,7 +92,7 @@ export default function DashboardPage() {
                 {!isLoading && patients?.map((patient) => {
                   const latestReading = patient.sensors;
                   const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
-                  const age = calculateAge(patient.date_of_birth);
+                  const age = calculateAge(patient.birthDate);
 
                   return (
                     <TableRow key={patient.id}>

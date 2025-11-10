@@ -20,7 +20,7 @@ import { Patient } from "@/lib/types";
 
 const patientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
-  date_of_birth: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
+  birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
   emergency_contact: z.string().min(10, "Enter a valid phone number."),
   historical_diseases: z.string().optional(),
   current_medications: z.string().optional(),
@@ -44,7 +44,7 @@ export default function AddPatientPage() {
     resolver: zodResolver(patientSchema),
     defaultValues: {
       name: "Maria Garcia",
-      date_of_birth: "1988-05-20",
+      birthDate: "1988-05-20",
       emergency_contact: "+212698765432",
       historical_diseases: "Hypertension",
       current_medications: "Amlodipine"
@@ -62,7 +62,7 @@ export default function AddPatientPage() {
         // It's missing `last_update` and `sensors` which should be added when sensors start
         const patientData: Omit<Patient, 'id' | 'last_update' | 'sensors'> = {
             name: data.name,
-            date_of_birth: data.date_of_birth,
+            birthDate: data.birthDate,
             emergency_contact: data.emergency_contact,
             historical_diseases: data.historical_diseases ? data.historical_diseases.split(',').map(s => s.trim()).filter(Boolean) : [],
             current_medications: data.current_medications ? data.current_medications.split(',').map(s => s.trim()).filter(Boolean) : [],
@@ -79,7 +79,7 @@ export default function AddPatientPage() {
 
         reset({
           name: "David Johnson",
-          date_of_birth: "1975-11-10",
+          birthDate: "1975-11-10",
           emergency_contact: "+212611223344",
           historical_diseases: "Diabetes Type 2",
           current_medications: "Metformin"
@@ -113,9 +113,9 @@ export default function AddPatientPage() {
                                 {errors.name && <p className="text-destructive text-sm mt-1">{errors.name.message}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="date_of_birth">Date of Birth</Label>
-                                <Input id="date_of_birth" type="date" {...register("date_of_birth")} />
-                                {errors.date_of_birth && <p className="text-destructive text-sm mt-1">{errors.date_of_birth.message}</p>}
+                                <Label htmlFor="birthDate">Date of Birth</Label>
+                                <Input id="birthDate" type="date" {...register("birthDate")} />
+                                {errors.birthDate && <p className="text-destructive text-sm mt-1">{errors.birthDate.message}</p>}
                             </div>
                         </div>
                         <div className="space-y-2">
