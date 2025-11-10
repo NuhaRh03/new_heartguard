@@ -1,8 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Award, Mail, User, Cake } from "lucide-react";
 import { useAuth, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -12,7 +11,6 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { useState, useEffect } from "react";
 
 export default function ProfilePage() {
-  const doctorImage = PlaceHolderImages.find(p => p.id === 'doctor-avatar');
   const { user } = useAuth();
   const firestore = useFirestore();
   const [formattedDate, setFormattedDate] = useState<string | null>(null);
@@ -61,7 +59,6 @@ export default function ProfilePage() {
         <Card className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
               <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary/20">
-                  <AvatarImage src={doctorImage?.imageUrl} alt={doctorProfile.name} data-ai-hint={doctorImage?.imageHint} />
                   <AvatarFallback className="text-3xl">{doctorProfile.name.split(" ").map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
             <CardTitle className="text-2xl">{doctorProfile.name}</CardTitle>

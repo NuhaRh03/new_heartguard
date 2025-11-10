@@ -1,9 +1,7 @@
 
 
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { getPatientStatusFromReading, type Patient, type SensorData } from "@/lib/types";
 import { useEffect, useState } from "react";
 
@@ -25,7 +23,6 @@ function calculateAge(birthDate: string): number {
 
 export function PatientHeader({ patient }: PatientHeaderProps) {
   const status = patient.sensors ? getPatientStatusFromReading(patient.sensors as SensorData) : { level: 'unknown', label: 'No Data' };
-  const patientImage = PlaceHolderImages.find(p => p.id === `patient-1`);
   const [age, setAge] = useState<number | null>(null);
 
   useEffect(() => {
@@ -37,7 +34,6 @@ export function PatientHeader({ patient }: PatientHeaderProps) {
   return (
     <div className="flex items-center gap-4">
       <Avatar className="h-16 w-16">
-        <AvatarImage src={patientImage?.imageUrl} alt={patient.name} data-ai-hint={patientImage?.imageHint}/>
         <AvatarFallback className="text-2xl">
           {patient.name.split(" ").map((n) => n[0]).join("")}
         </AvatarFallback>

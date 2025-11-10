@@ -10,17 +10,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Patient, getPatientStatusFromReading } from "@/lib/types";
 import { useUser, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
 
 export default function DashboardPage() {
-  const patientImages = PlaceHolderImages.filter(p => p.id.startsWith('patient-'));
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -78,7 +76,6 @@ export default function DashboardPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage />
                           <AvatarFallback>...</AvatarFallback>
                         </Avatar>
                         <div className="font-medium">Loading...</div>
@@ -92,11 +89,9 @@ export default function DashboardPage() {
                     <TableCell className="text-right"><Button variant="ghost" size="sm" disabled>View</Button></TableCell>
                   </TableRow>
                 ))}
-                {!isLoading && patients?.map((patient, index) => {
+                {!isLoading && patients?.map((patient) => {
                   const latestReading = patient.sensors;
                   const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
-                  const imageIndex = index % patientImages.length;
-                  const patientImage = patientImages[imageIndex];
                   const age = calculateAge(patient.date_of_birth);
 
                   return (
@@ -104,7 +99,6 @@ export default function DashboardPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
-                            <AvatarImage src={patientImage?.imageUrl} alt={patient.name} data-ai-hint={patientImage?.imageHint}/>
                             <AvatarFallback>
                               {patient.name
                                 .split(" ")

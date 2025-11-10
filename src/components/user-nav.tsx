@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,7 +9,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from 'next/link';
 import { LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +17,6 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 export function UserNav() {
-  const doctorImage = PlaceHolderImages.find(p => p.id === 'doctor-avatar');
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
@@ -47,7 +45,6 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={doctorImage?.imageUrl} alt={user?.displayName || ''} data-ai-hint={doctorImage?.imageHint} />
             <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>

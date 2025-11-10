@@ -42,6 +42,13 @@ export default function AddPatientPage() {
     formState: { errors },
   } = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
+    defaultValues: {
+      name: "Maria Garcia",
+      date_of_birth: "1988-05-20",
+      emergency_contact: "+212698765432",
+      historical_diseases: "Hypertension",
+      current_medications: "Amlodipine"
+    }
   });
 
   const onSubmit = (data: PatientFormData) => {
@@ -70,8 +77,14 @@ export default function AddPatientPage() {
             description: `${data.name} has been added to your patient list.`,
         });
 
-        reset();
-        router.push('/');
+        reset({
+          name: "David Johnson",
+          date_of_birth: "1975-11-10",
+          emergency_contact: "+212611223344",
+          historical_diseases: "Diabetes Type 2",
+          current_medications: "Metformin"
+        });
+        // router.push('/'); // Commented out to allow adding multiple patients
     });
   };
 
@@ -89,7 +102,7 @@ export default function AddPatientPage() {
             <Card className="max-w-4xl">
                 <CardHeader>
                     <CardTitle>Patient Details</CardTitle>
-                    <CardDescription>Enter the details for the new patient below.</CardDescription>
+                    <CardDescription>Enter the details for the new patient below. Default values are provided for demonstration.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
@@ -122,7 +135,7 @@ export default function AddPatientPage() {
                         </div>
                         <div className="flex justify-end">
                             <Button type="submit" disabled={isPending}>
-                                {isPending ? 'Adding Patient...' : 'Add Patient'}
+                                {isPending ? 'Adding Patient...' : 'Add Another Patient'}
                             </Button>
                         </div>
                     </form>
