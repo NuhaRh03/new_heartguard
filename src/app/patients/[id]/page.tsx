@@ -1,6 +1,6 @@
 
 'use client';
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { PatientHeader } from "./_components/patient-header";
 import { VitalsMonitor } from "./_components/vitals-monitor";
 import { PatientInfoCard } from "./_components/patient-info-card";
@@ -12,24 +12,20 @@ import { doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
+import { useUser } from "@/firebase";
 import { DashboardLayout } from "@/components/dashboard-layout";
 
-interface PatientPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function PatientPage({ params }: PatientPageProps) {
+export default function PatientPage() {
   const firestore = useFirestore();
-  const { user } = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
+  const params = useParams();
+  const patientId = params.id as string;
 
   const patientDocRef = useMemoFirebase(() => {
       if (!firestore || !user) return null;
-      return doc(firestore, `patients/${params.id}`);
-  }, [firestore, user, params.id]);
+      return doc(firestore, `patients/${patientId}`);
+  }, [firestore, user, patientId]);
 
   const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientDocRef);
 
