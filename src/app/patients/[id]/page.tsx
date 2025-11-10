@@ -50,6 +50,7 @@ export default function PatientPage() {
     });
   }
 
+  // First, handle the loading state
   if (isPatientLoading) {
     return (
       <DashboardLayout>
@@ -77,10 +78,12 @@ export default function PatientPage() {
     );
   }
 
+  // After loading, if patient is still null, it means it wasn't found or user doesn't have permission
   if (!patient) {
     notFound();
   }
-
+  
+  // If we get here, patient exists.
   return (
     <DashboardLayout>
       <div className="flex-1 space-y-6 p-4 md:p-8">
