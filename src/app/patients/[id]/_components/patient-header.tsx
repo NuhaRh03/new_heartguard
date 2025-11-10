@@ -35,7 +35,7 @@ export function PatientHeader({ patient }: PatientHeaderProps) {
     <div className="flex items-center gap-4">
       <Avatar className="h-16 w-16">
         <AvatarFallback className="text-2xl">
-          {patient.name.split(" ").map((n) => n[0]).join("")}
+          {patient.name ? patient.name.split(" ").map((n) => n[0]).join("") : 'P'}
         </AvatarFallback>
       </Avatar>
       <div>

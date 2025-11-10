@@ -102,9 +102,11 @@ export default function DashboardPage() {
                           <Avatar>
                             <AvatarFallback>
                               {patient.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
+                                ? patient.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                : 'P'}
                             </AvatarFallback>
                           </Avatar>
                           <div className="font-medium">{patient.name}</div>
