@@ -8,8 +8,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, useUser, useFirestore } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useUser, useFirestore } from "@/firebase";
+import { collection, addDoc } from "firebase/firestore";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -58,8 +58,6 @@ export default function AddPatientPage() {
     }
 
     startTransition(async () => {
-        // This is an incomplete patient record according to your new schema
-        // It's missing `last_update` and `sensors` which should be added when sensors start
         const patientData: Omit<Patient, 'id' | 'last_update' | 'sensors'> = {
             name: data.name,
             birthDate: data.birthDate,
@@ -70,7 +68,7 @@ export default function AddPatientPage() {
         };
 
         const patientsCollection = collection(firestore, 'patients');
-        await addDocumentNonBlocking(patientsCollection, patientData);
+        await addDoc(patientsCollection, patientData);
         
         toast({
             title: "Patient Added",
