@@ -86,7 +86,7 @@ export default function PatientPage() {
     });
 
     const now = new Date();
-    const newSensorReading: Omit<SensorData, 'id' | 'collectedBy'> = {
+    const newSensorReading: Omit<SensorData, 'id'> = {
       timestamp: now.toISOString(),
       heartRate: 75 + (Math.random() * 10 - 5),
       roomOxygen: 20.9 + (Math.random() * 0.2 - 0.1),
@@ -94,11 +94,12 @@ export default function PatientPage() {
       roomTemperature: 24 + (Math.random() * 2 - 1),
       patientTemperature: 37 + (Math.random() * 0.5 - 0.25),
       gasValue: 300 + (Math.random() * 100 - 50),
+      collectedBy: user.uid,
     };
 
-    await addDoc(sensorDataColRef, { ...newSensorReading, collectedBy: user.uid });
     const status = getPatientStatusFromSensorData(newSensorReading);
-
+    await addDoc(sensorDataColRef, newSensorReading);
+    
     await updateDoc(patientDocRef, {
       status: status,
       lastReadingAt: now.toISOString(),
@@ -132,11 +133,7 @@ export default function PatientPage() {
     );
   }
 
-  // After loading, if there's no patient data, it means the document doesn't exist.
-  // Or if there was a permission error fetching it.
   if (patientError || !patient) {
-     // We now show notFound() if there's an error (like permission denied) or if patient is null after loading.
-     // The security rules are the source of truth, so an error implies no access.
     return notFound();
   }
 
