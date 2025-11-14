@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
@@ -25,9 +25,7 @@ const patientSchema = z.object({
   phone: z.string().optional(),
   birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
   gender: z.enum(["Male", "Female", "Other"]),
-  emergencyContactName: z.string().min(2, "Emergency contact name is required."),
-  emergencyContactRelationship: z.string().min(2, "Relationship is required."),
-  emergencyContactPhone: z.string().min(10, "Enter a valid phone number."),
+  emergencyContact: z.string().min(10, "Enter a valid phone number."),
   historicalDiseases: z.string().optional(),
   currentMedications: z.string().optional(),
 });
@@ -44,7 +42,6 @@ export default function AddPatientPage() {
   const {
     register,
     handleSubmit,
-    reset,
     control,
     formState: { errors },
   } = useForm<PatientFormData>({
@@ -55,9 +52,7 @@ export default function AddPatientPage() {
       gender: "Female",
       email: "maria.garcia@example.com",
       phone: "555-0102",
-      emergencyContactName: "Juan Garcia",
-      emergencyContactRelationship: "Husband",
-      emergencyContactPhone: "+212698765432",
+      emergencyContact: "+212600123456",
       historicalDiseases: "Hypertension",
       currentMedications: "Amlodipine"
     }
@@ -76,11 +71,7 @@ export default function AddPatientPage() {
             phone: data.phone,
             birthDate: data.birthDate,
             gender: data.gender,
-            emergencyContact: {
-              name: data.emergencyContactName,
-              relationship: data.emergencyContactRelationship,
-              phone: data.emergencyContactPhone,
-            },
+            emergencyContact: data.emergencyContact,
             historicalDiseases: data.historicalDiseases ? data.historicalDiseases.split(',').map(s => s.trim()).filter(Boolean) : [],
             currentMedications: data.currentMedications ? data.currentMedications.split(',').map(s => s.trim()).filter(Boolean) : [],
             createdBy: doctor.uid,
@@ -158,26 +149,10 @@ export default function AddPatientPage() {
                                 />
                                 {errors.gender && <p className="text-destructive text-sm mt-1">{errors.gender.message}</p>}
                             </div>
-                        </div>
-
-                         <div className="space-y-4 border-t pt-6">
-                            <Label className="font-semibold">Emergency Contact</Label>
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                               <div className="space-y-2">
-                                    <Label htmlFor="emergencyContactName">Full Name</Label>
-                                    <Input id="emergencyContactName" {...register("emergencyContactName")} />
-                                    {errors.emergencyContactName && <p className="text-destructive text-sm mt-1">{errors.emergencyContactName.message}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emergencyContactRelationship">Relationship</Label>
-                                    <Input id="emergencyContactRelationship" {...register("emergencyContactRelationship")} />
-                                    {errors.emergencyContactRelationship && <p className="text-destructive text-sm mt-1">{errors.emergencyContactRelationship.message}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emergencyContactPhone">Phone Number</Label>
-                                    <Input id="emergencyContactPhone" {...register("emergencyContactPhone")} />
-                                    {errors.emergencyContactPhone && <p className="text-destructive text-sm mt-1">{errors.emergencyContactPhone.message}</p>}
-                                </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="emergencyContact">Emergency Contact Phone</Label>
+                                <Input id="emergencyContact" {...register("emergencyContact")} />
+                                {errors.emergencyContact && <p className="text-destructive text-sm mt-1">{errors.emergencyContact.message}</p>}
                             </div>
                         </div>
 

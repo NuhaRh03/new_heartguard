@@ -48,17 +48,12 @@ export function PatientInfoCard({ patient }: PatientInfoCardProps) {
 
         <div className="space-y-3">
             <h3 className="font-semibold flex items-center gap-2 text-sm text-destructive">
-                <User size={16} /> Emergency Contact
+                <Phone size={16} /> Emergency Contact
             </h3>
-            <InfoRow
-                icon={<User size={14} />}
-                label={`Name (${patient.emergencyContact.relationship})`}
-                value={patient.emergencyContact.name}
-            />
              <InfoRow
                 icon={<Phone size={14} />}
-                label="Phone"
-                value={patient.emergencyContact.phone}
+                label="Phone Number"
+                value={patient.emergencyContact}
             />
         </div>
       </CardContent>

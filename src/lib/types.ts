@@ -13,11 +13,7 @@ export interface Patient {
   name: string;
   birthDate: string;
   gender: 'Male' | 'Female' | 'Other';
-  emergencyContact: {
-    name: string;
-    relationship: string;
-    phone: string;
-  };
+  emergencyContact: string;
   email?: string;
   phone?: string;
   historicalDiseases: string[];
