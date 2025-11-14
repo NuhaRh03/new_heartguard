@@ -1,55 +1,60 @@
-// app/patients/[id]/page.tsx
-"use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
-import type { Patient } from "@/lib/types";
-import { PatientInfoCard } from "./_components/patient-info-card";
-import { DashboardLayout } from "@/components/dashboard-layout";
-import { VitalsMonitor } from "./_components/vitals-monitor";
-import { SensorHistory } from "./_components/sensor-history";
-import { AnomalyDetector } from "./_components/anomaly-detector";
+'use client';
 
+import { useParams, notFound } from 'next/navigation';
+import { collection, doc, query, orderBy, limit } from 'firebase/firestore';
+import { useDoc, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import type { Patient, SensorData } from '@/lib/types';
+import { PatientInfoCard } from './_components/patient-info-card';
+import { DashboardLayout } from '@/components/dashboard-layout';
+import { VitalsMonitor } from './_components/vitals-monitor';
+import { SensorHistory } from './_components/sensor-history';
+import { AnomalyDetector } from './_components/anomaly-detector';
+import { PatientHeader } from './_components/patient-header';
 
 export default function PatientPage() {
   const params = useParams<{ id: string }>();
   const id = String(params.id);
   const firestore = useFirestore();
+  const { user } = useUser();
 
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Memoized reference to the patient document
+  const patientDocRef = useMemoFirebase(() => {
+    if (!firestore || !id) return null;
+    return doc(firestore, 'patients', id);
+  }, [firestore, id]);
 
-  useEffect(() => {
-    if (!firestore || !id) return;
-    async function load() {
-      try {
-        setLoading(true);
-        setError(null);
+  const {
+    data: patient,
+    isLoading: isLoadingPatient,
+    error: patientError,
+  } = useDoc<Patient>(patientDocRef);
 
-        const ref = doc(firestore, "patients", id);
-        const snap = await getDoc(ref);
+  // Memoized query for the sensor data subcollection
+  const sensorDataQuery = useMemoFirebase(() => {
+    if (!firestore || !id) return null;
+    return query(
+      collection(firestore, `patients/${id}/sensorData`),
+      orderBy('timestamp', 'desc'),
+      limit(10)
+    );
+  }, [firestore, id]);
 
-        if (!snap.exists()) {
-          setError("Patient not found in Firestore");
-        } else {
-          const data = { ...snap.data(), id: snap.id } as Patient;
-          setPatient(data);
-        }
-      } catch (e: any) {
-        console.error("Error loading patient:", e);
-        setError(e.message || "Unknown error");
-      } finally {
-        setLoading(false);
-      }
-    }
+  const {
+    data: sensorHistory,
+    isLoading: isLoadingHistory,
+  } = useCollection<SensorData>(sensorDataQuery);
 
-    load();
-  }, [id, firestore]);
+  // If after loading, the patient doesn't exist, show 404
+  // We also check ownership here as a secondary client-side check.
+  // The primary security is Firestore rules.
+  if (!isLoadingPatient && (!patient || (patient && user && patient.createdBy !== user.uid))) {
+    notFound();
+  }
 
-  if (loading) {
+  const isLoading = isLoadingPatient;
+
+  if (isLoading) {
     return (
       <DashboardLayout>
         <main className="min-h-screen flex items-center justify-center">
@@ -59,13 +64,13 @@ export default function PatientPage() {
     );
   }
 
-  if (error) {
+  if (patientError) {
     return (
       <DashboardLayout>
         <main className="min-h-screen flex items-center justify-center">
           <div className="border rounded-xl p-6 text-sm text-red-600 max-w-md">
             <p className="font-semibold mb-1">Error</p>
-            <p>{error}</p>
+            <p>{patientError.message}</p>
           </div>
         </main>
       </DashboardLayout>
@@ -73,10 +78,13 @@ export default function PatientPage() {
   }
 
   if (!patient) {
+    // This case will likely be caught by the notFound() above, but is here as a fallback.
     return (
-       <DashboardLayout>
+      <DashboardLayout>
         <main className="min-h-screen flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">No patient data found.</p>
+          <p className="text-sm text-muted-foreground">
+            No patient data found.
+          </p>
         </main>
       </DashboardLayout>
     );
@@ -84,14 +92,17 @@ export default function PatientPage() {
 
   return (
     <DashboardLayout>
-      <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-            <VitalsMonitor patient={patient} />
-            <SensorHistory sensorHistory={null} isLoading={false} />
-        </div>
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-            <PatientInfoCard patient={patient} />
-            <AnomalyDetector patient={patient} sensorHistory={null} />
+      <main className="p-4 sm:px-6 sm:py-0 md:gap-8 space-y-4">
+        <PatientHeader patient={patient} />
+        <div className="grid flex-1 items-start gap-4 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
+            <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
+                <VitalsMonitor patient={patient} />
+                <SensorHistory sensorHistory={sensorHistory} isLoading={isLoadingHistory} />
+            </div>
+            <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+                <PatientInfoCard patient={patient} />
+                <AnomalyDetector patient={patient} sensorHistory={sensorHistory} />
+            </div>
         </div>
       </main>
     </DashboardLayout>
