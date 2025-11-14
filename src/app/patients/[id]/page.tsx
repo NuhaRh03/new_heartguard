@@ -32,7 +32,7 @@ export default function PatientPage() {
 
   // ---------- 1) Patient from Firestore ----------
   const patientDocRef = useMemoFirebase(() => {
-    // CRITICAL FIX: Do not try to create the doc ref until the user is loaded.
+    // CRITICAL FIX: Do not try to create the doc ref until the user (the doctor) is loaded.
     // This prevents a race condition where the query runs before auth is ready,
     // causing a permission error that incorrectly leads to a 404.
     if (!firestore || !id || isUserLoading) return null;
@@ -120,9 +120,9 @@ export default function PatientPage() {
   // ---------- 4) Loading / errors / 404 ----------
   const isStillLoading = isLoadingPatient || isUserLoading;
   
+  // This is the definitive check. Only trigger notFound() if all loading is complete
+  // and we still have no patient data. This prevents the race condition.
   if (!isStillLoading && !patient) {
-    // If loading is done (user is loaded, doc fetch is complete) and we still have no patient,
-    // then it's a genuine 404 (or a permission error).
     notFound();
   }
 
@@ -148,14 +148,14 @@ export default function PatientPage() {
       </DashboardLayout>
     );
   }
-
+  
+  // This check is now mostly for safety, as notFound() above should catch it.
   if (!patient) {
-    // This case will likely be pre-empted by the notFound() call above, but it's good for safety.
-    return (
+     return (
       <DashboardLayout>
         <main className="min-h-screen flex items-center justify-center">
           <p className="text-sm text-muted-foreground">
-            No patient data found.
+            No patient data could be loaded.
           </p>
         </main>
       </DashboardLayout>
