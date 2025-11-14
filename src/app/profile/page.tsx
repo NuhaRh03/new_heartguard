@@ -11,7 +11,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { useState, useEffect } from "react";
 
 export default function ProfilePage() {
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [formattedDate, setFormattedDate] = useState<string | null>(null);
 
@@ -21,14 +21,19 @@ export default function ProfilePage() {
     return doc(firestore, `doctors/${user.uid}`);
   },[firestore, user]);
 
-  const { data: doctorProfile, isLoading } = useDoc<DoctorProfile>(doctorDocRef);
+  const { data: doctorProfile, isLoading: isLoadingProfile } = useDoc<DoctorProfile>(doctorDocRef);
 
   useEffect(() => {
     if (doctorProfile?.dateOfBirth) {
-      setFormattedDate(new Date(doctorProfile.dateOfBirth).toLocaleDateString());
+      // Use date-fns or a simpler method to format if needed, for now locale string is fine
+      const date = new Date(doctorProfile.dateOfBirth);
+      // Add a day to the date to compensate for timezone issues if any
+      date.setDate(date.getDate() + 1);
+      setFormattedDate(date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric'}));
     }
   }, [doctorProfile]);
 
+  const isLoading = isUserLoading || isLoadingProfile;
 
   if (isLoading || !doctorProfile) {
     return (
