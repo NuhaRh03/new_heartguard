@@ -140,10 +140,8 @@ export default function DashboardPage() {
                         {latestReading?.gasValue ? latestReading.gasValue.toFixed(0) : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button asChild variant="ghost" size="sm">
-                          <Link href={`/patients/${patient.id}`}>
-                            View <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
+                        <Button asChild variant="link">
+                          <Link href={`/patients/${patient.id}`}>Open</Link>
                         </Button>
                       </TableCell>
                     </TableRow>
