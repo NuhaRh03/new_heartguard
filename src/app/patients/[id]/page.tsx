@@ -15,7 +15,7 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import type { Patient, SensorData } from '@/lib/types';
+import { getPatientStatusFromSensorData, type Patient, type SensorData } from '@/lib/types';
 import { PatientInfoCard } from './_components/patient-info-card';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { VitalsMonitor } from './_components/vitals-monitor';
@@ -98,13 +98,15 @@ export default function PatientPage() {
       const latestReading = sensorHistory[0];
       const latestStatus = getPatientStatusFromSensorData(latestReading);
 
+      // Check if an update is needed to avoid unnecessary writes
       if (latestReading.timestamp !== patient.lastReadingAt || patient.status !== latestStatus) {
          const patientRef = doc(firestore, 'patients', patient.id);
          
-         // Use the browser's import to avoid server-side issues
+         // Use dynamic import to avoid server-side issues
          import('firebase/firestore').then(({ updateDoc }) => {
             updateDoc(patientRef, {
                 latestSensorData: {
+                    // Make sure to spread all fields of the reading
                     ...latestReading,
                 },
                 lastReadingAt: latestReading.timestamp,
