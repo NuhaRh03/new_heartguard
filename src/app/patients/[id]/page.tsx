@@ -134,7 +134,7 @@ export default function PatientPage() {
   }
 
   if (patientError || !patient) {
-    return notFound();
+    notFound();
   }
 
 
@@ -142,7 +142,7 @@ export default function PatientPage() {
     <DashboardLayout>
       <div className="flex-1 space-y-6 p-4 md:p-8">
         <div className="flex justify-between items-start">
-           {patient && <div className="text-2xl font-bold">{patient.name}</div>}
+          <div className="text-2xl font-bold">{patient.name}</div>
           <Button onClick={handleStartSensors}>
             <PlayCircle className="mr-2 h-4 w-4" />
             Start Sensors
