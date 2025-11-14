@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
     if (user && firestore) {
@@ -31,7 +31,9 @@ export default function DashboardPage() {
     return null;
   }, [user, firestore]);
   
-  const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
+  const { data: patients, isLoading: isLoadingPatients } = useCollection<Patient>(patientsQuery);
+
+  const isLoading = isUserLoading || isLoadingPatients;
 
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return NaN;
