@@ -15,10 +15,12 @@ const PredictiveAnomalyDetectionInputSchema = z.object({
   sensorData: z.array(
     z.object({
       timestamp: z.string().describe('The timestamp of the sensor reading.'),
-      o2Level: z.number().describe('The oxygen level of the patient.'),
-      roomTemperature: z.number().describe('The room temperature.'),
-      patientTemperature: z.number().describe('The patient temperature.'),
-      roomHumidity: z.number().describe('The room humidity.'),
+      heartRate: z.number().describe('The heart rate of the patient in beats per minute.'),
+      roomOxygen: z.number().describe('The room oxygen level in percent.'),
+      roomTemperature: z.number().describe('The room temperature in Celsius.'),
+      patientTemperature: z.number().describe('The patient temperature in Celsius.'),
+      roomHumidity: z.number().describe('The room humidity in percent.'),
+      gasValue: z.number().describe('The gas sensor value for air quality in ppm.'),
     })
   ).describe('An array of sensor data for the patient.'),
   alertThreshold: z.number().describe('The threshold for anomaly level to trigger an alert.'),
@@ -26,7 +28,7 @@ const PredictiveAnomalyDetectionInputSchema = z.object({
 export type PredictiveAnomalyDetectionInput = z.infer<typeof PredictiveAnomalyDetectionInputSchema>;
 
 const PredictiveAnomalyDetectionOutputSchema = z.object({
-  anomalyLevel: z.number().describe('The anomaly level detected in the sensor data.'),
+  anomalyLevel: z.number().describe('The anomaly level detected in the sensor data on a scale of 0-10.'),
   alertTriggered: z.boolean().describe('Whether an alert was triggered based on the anomaly level and threshold.'),
   explanation: z.string().describe('An explanation of why the anomaly level was detected.'),
 });
@@ -42,25 +44,18 @@ const prompt = ai.definePrompt({
   output: {schema: PredictiveAnomalyDetectionOutputSchema},
   prompt: `You are an AI assistant specializing in detecting anomalies in patient sensor data.
 
-  Analyze the provided sensor data for patient {{patientId}} and determine the anomaly level.
+  Analyze the provided sensor data for patient {{patientId}} and determine the anomaly level on a scale of 0 (no anomaly) to 10 (critical anomaly).
 
   Sensor Data:
   {{#each sensorData}}
-  - Timestamp: {{timestamp}}, O2 Level: {{o2Level}}, Room Temperature: {{roomTemperature}}, Patient Temperature: {{patientTemperature}}, Room Humidity: {{roomHumidity}}
+  - Timestamp: {{timestamp}}, Heart Rate: {{heartRate}} bpm, Patient Temp: {{patientTemperature}}°C, Room Temp: {{roomTemperature}}°C, Room O₂: {{roomOxygen}}%, Room Humidity: {{roomHumidity}}%, Gas Value: {{gasValue}} ppm
   {{/each}}
 
-  Consider the relationships between different sensor readings and identify any unusual patterns or deviations from the norm.
+  Consider the relationships between different sensor readings and identify any unusual patterns or deviations from the norm. A high patient temperature, or very high/low heart rate are significant indicators.
 
   Based on the anomaly level and the alert threshold of {{alertThreshold}}, determine whether an alert should be triggered.
 
-  Explain the reasons for the detected anomaly level and whether an alert was triggered.
-
-  Output in JSON format:
-  { 
-    anomalyLevel: number,
-    alertTriggered: boolean,
-    explanation: string
-  }
+  Provide a concise, one-sentence explanation for your analysis.
   `,
 });
 

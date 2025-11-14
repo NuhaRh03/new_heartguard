@@ -2,17 +2,16 @@
 
 import type { Patient } from "@/lib/types";
 import { VitalCard } from "./vital-card";
-import { Thermometer, Droplets } from "lucide-react";
+import { Thermometer, Droplets, HeartPulse, Wind } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface VitalsMonitorProps {
   patient: Patient;
 }
 
-const O2Icon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground"><path d="M12 15a3 3 0 0 0-3 3c0 1.7 1.3 3 3 3s3-1.3 3-3a3 3 0 0 0-3-3Z"/><path d="M12 12v-1"/><path d="M12 8V7"/><path d="M12 4V3"/><path d="M18.8 17.5a3 3 0 0 1-2.1 2.1"/><path d="M17.5 5.2a3 3 0 0 1 2.1 2.1"/><path d="M5.2 6.5a3-3 0 0 1 2.1-2.1"/><path d="M6.5 18.8a3 3 0 0 1-2.1-2.1"/></svg>
+const GasIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground"><path d="M4 14h4v4" /><path d="M6 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" /><path d="M12 17h4v4" /><path d="M14 15a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" /><path d="M19 13h4v4" /><path d="M21 11a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" /><path d="M4 7h16" /><path d="M7 4h10" /><path d="M10 4a2 2 0 1 0-4 0" /></svg>
 );
-
 
 export function VitalsMonitor({ patient }: VitalsMonitorProps) {
   const currentData = patient.latestSensorData;
@@ -37,7 +36,17 @@ export function VitalsMonitor({ patient }: VitalsMonitorProps) {
         <CardHeader>
             <CardTitle>Live Vitals</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <VitalCard
+            title="Heart Rate"
+            value={currentData.heartRate}
+            unit="bpm"
+            Icon={HeartPulse}
+            data={chartData}
+            dataKey="heartRate"
+            color="hsl(var(--chart-1))"
+            normalRange={[60, 100]}
+          />
           <VitalCard
             title="Patient Temperature"
             value={currentData.patientTemperature}
@@ -69,14 +78,24 @@ export function VitalsMonitor({ patient }: VitalsMonitorProps) {
             normalRange={[30, 60]}
           />
            <VitalCard
-            title="Room O2"
+            title="Room O₂"
             value={currentData.roomOxygen}
             unit="%"
-            Icon={O2Icon}
+            Icon={Wind}
             data={chartData}
             dataKey="roomOxygen"
-            color="hsl(var(--chart-1))"
+            color="hsl(var(--chart-5))"
             normalRange={[20, 22]}
+          />
+          <VitalCard
+            title="Air Quality"
+            value={currentData.gasValue}
+            unit="ppm"
+            Icon={GasIcon}
+            data={chartData}
+            dataKey="gasValue"
+            color="hsl(var(--foreground))"
+            normalRange={[0, 1000]}
           />
         </CardContent>
     </Card>

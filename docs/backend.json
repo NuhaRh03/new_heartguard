@@ -82,6 +82,10 @@
           "description": "Timestamp of the sensor reading.",
           "format": "date-time"
         },
+        "heartRate": {
+          "type": "number",
+          "description": "Patient's heart rate (beats per minute)."
+        },
         "roomOxygen": {
           "type": "number",
           "description": "Oxygen level in the room (%)."
@@ -98,6 +102,10 @@
             "type": "number",
             "description": "Patient's body temperature (°C)."
         },
+        "gasValue": {
+            "type": "number",
+            "description": "Gas sensor value (e.g., for air quality)."
+        },
         "collectedBy": {
           "type": "string",
           "description": "UID of the doctor who collected the data."
@@ -105,10 +113,12 @@
       },
       "required": [
         "timestamp",
+        "heartRate",
         "roomOxygen",
         "roomHumidity",
         "roomTemperature",
         "patientTemperature",
+        "gasValue",
         "collectedBy"
       ]
     },

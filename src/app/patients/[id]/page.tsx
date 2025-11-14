@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, notFound } from 'next/navigation';
-import { collection, doc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, query, orderBy, limit, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useDoc, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import type { Patient, SensorData } from '@/lib/types';
 import { PatientInfoCard } from './_components/patient-info-card';
@@ -11,12 +11,23 @@ import { VitalsMonitor } from './_components/vitals-monitor';
 import { SensorHistory } from './_components/sensor-history';
 import { AnomalyDetector } from './_components/anomaly-detector';
 import { PatientHeader } from './_components/patient-header';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { Button } from '@/components/ui/button';
+import { Play, Square } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { getPatientStatusFromSensorData } from '@/lib/types';
 
 export default function PatientPage() {
   const params = useParams<{ id: string }>();
   const id = String(params.id);
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
+
+  const [isSensing, setIsSensing] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const sensorIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Memoized reference to the patient document
   const patientDocRef = useMemoFirebase(() => {
@@ -44,11 +55,62 @@ export default function PatientPage() {
     data: sensorHistory,
     isLoading: isLoadingHistory,
   } = useCollection<SensorData>(sensorDataQuery);
+  
+  const handleStartSensors = () => {
+    if (!user || !patientDocRef) return;
+    setIsSensing(true);
+    toast({ title: 'Sensor simulation started.' });
+
+    sensorIntervalRef.current = setInterval(() => {
+      startTransition(async () => {
+        const newSensorReading: Omit<SensorData, 'id'> = {
+          timestamp: new Date().toISOString(),
+          heartRate: 70 + Math.random() * 10 - 5,
+          roomOxygen: 20.5 + Math.random() * 0.5 - 0.25,
+          roomHumidity: 45 + Math.random() * 10 - 5,
+          roomTemperature: 22 + Math.random() * 2 - 1,
+          patientTemperature: 36.5 + Math.random() * 1.5 - 0.5,
+          gasValue: 300 + Math.random() * 50 - 25,
+          collectedBy: user.uid,
+        };
+
+        const sensorDataCollection = collection(firestore, patientDocRef.path, 'sensorData');
+        await addDoc(sensorDataCollection, newSensorReading);
+        
+        const newStatus = getPatientStatusFromSensorData(newSensorReading);
+        
+        // Update the parent patient document with the latest data
+        await updateDoc(patientDocRef, {
+            latestSensorData: newSensorReading,
+            lastReadingAt: newSensorReading.timestamp,
+            status: newStatus,
+        });
+
+      });
+    }, 5000); // Add a new reading every 5 seconds
+  };
+  
+  const handleStopSensors = () => {
+    setIsSensing(false);
+    toast({ title: 'Sensor simulation stopped.' });
+    if (sensorIntervalRef.current) {
+      clearInterval(sensorIntervalRef.current);
+      sensorIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    // Cleanup interval on component unmount
+    return () => {
+      if (sensorIntervalRef.current) {
+        clearInterval(sensorIntervalRef.current);
+      }
+    };
+  }, []);
+
 
   // If after loading, the patient doesn't exist, show 404
-  // We also check ownership here as a secondary client-side check.
-  // The primary security is Firestore rules.
-  if (!isLoadingPatient && (!patient || (patient && user && patient.createdBy !== user.uid))) {
+  if (!isLoadingPatient && !patient) {
     notFound();
   }
 
@@ -100,6 +162,22 @@ export default function PatientPage() {
                 <SensorHistory sensorHistory={sensorHistory} isLoading={isLoadingHistory} />
             </div>
             <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Sensor Controls</CardTitle>
+                        <CardDescription>Simulate real-time sensor data for this patient.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex gap-4">
+                        <Button onClick={handleStartSensors} disabled={isSensing || isPending} className="w-full">
+                            <Play className="mr-2"/>
+                            Start Sensors
+                        </Button>
+                        <Button onClick={handleStopSensors} disabled={!isSensing || isPending} variant="outline" className="w-full">
+                            <Square className="mr-2"/>
+                            Stop Sensors
+                        </Button>
+                    </CardContent>
+                </Card>
                 <PatientInfoCard patient={patient} />
                 <AnomalyDetector patient={patient} sensorHistory={sensorHistory} />
             </div>

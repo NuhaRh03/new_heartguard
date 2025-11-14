@@ -33,10 +33,12 @@ export function AnomalyDetector({ patient, sensorHistory }: AnomalyDetectorProps
       // The AI flow expects a different data structure, so we need to map our sensor data
       const formattedSensorData = sensorHistory.map(d => ({
         timestamp: d.timestamp,
-        o2Level: d.roomOxygen, // AI model refers to o2Level
+        heartRate: d.heartRate,
+        roomOxygen: d.roomOxygen,
         roomTemperature: d.roomTemperature,
         patientTemperature: d.patientTemperature,
         roomHumidity: d.roomHumidity,
+        gasValue: d.gasValue,
       }));
 
       const response = await runAnomalyDetection({
