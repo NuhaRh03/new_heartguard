@@ -61,7 +61,7 @@ export default function PatientPage() {
 
   const { data: sensorHistory, isLoading: isHistoryLoading } =
     useCollection<SensorData>(recentSensorDataQuery);
-  
+
   // Security check: After data is loaded, verify ownership.
   // If the user is not the owner, redirect them. This prevents unauthorized access
   // if a user manually enters a URL for a patient that isn't theirs.
@@ -75,7 +75,6 @@ export default function PatientPage() {
       router.replace('/'); // Redirect to a safe page
     }
   }, [isPatientLoading, patient, user, router, toast]);
-
 
   const handleStartSensors = async () => {
     if (!user || !patient || !sensorDataColRef || !patientDocRef) return;
@@ -96,10 +95,10 @@ export default function PatientPage() {
       gasValue: 300 + (Math.random() * 100 - 50),
       collectedBy: user.uid,
     };
-
-    const status = getPatientStatusFromSensorData(newSensorReading);
-    await addDoc(sensorDataColRef, newSensorReading);
     
+    const status = getPatientStatusFromSensorData(newSensorReading);
+
+    await addDoc(sensorDataColRef, newSensorReading);
     await updateDoc(patientDocRef, {
       status: status,
       lastReadingAt: now.toISOString(),
@@ -136,7 +135,6 @@ export default function PatientPage() {
   if (patientError || !patient) {
     notFound();
   }
-
 
   return (
     <DashboardLayout>
