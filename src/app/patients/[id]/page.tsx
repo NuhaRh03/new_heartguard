@@ -133,18 +133,19 @@ export default function PatientPage() {
   }
 
   // After loading, if there's no patient data, it means the document doesn't exist.
-  // Or if the user isn't the owner, we also don't show the data.
-  if (!patient || (patient && user && patient.createdBy !== user.uid)) {
-    // The useEffect will handle the redirection, but as a fallback,
-    // we can show a not found page or a loading/access denied state.
-    // notFound() is suitable here as the resource is not available to this user.
+  // Or if there was a permission error fetching it.
+  if (patientError || !patient) {
+     // We now show notFound() if there's an error (like permission denied) or if patient is null after loading.
+     // The security rules are the source of truth, so an error implies no access.
     return notFound();
   }
+
 
   return (
     <DashboardLayout>
       <div className="flex-1 space-y-6 p-4 md:p-8">
-        <div className="flex justify-end items-start">
+        <div className="flex justify-between items-start">
+           {patient && <div className="text-2xl font-bold">{patient.name}</div>}
           <Button onClick={handleStartSensors}>
             <PlayCircle className="mr-2 h-4 w-4" />
             Start Sensors
