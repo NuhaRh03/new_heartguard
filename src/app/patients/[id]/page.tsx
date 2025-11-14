@@ -13,6 +13,7 @@ import {
   useDoc,
   useFirestore,
   useMemoFirebase,
+  useUser,
 } from '@/firebase';
 import { getPatientStatusFromSensorData, type Patient, type SensorData } from '@/lib/types';
 import { PatientInfoCard } from './_components/patient-info-card';
@@ -27,6 +28,7 @@ export default function PatientPage() {
   const params = useParams<{ id: string }>();
   const id = String(params.id);
   const firestore = useFirestore();
+  const { isUserLoading } = useUser();
 
   // ---------- 1) Patient from Firestore ----------
   const patientDocRef = useMemoFirebase(() => {
@@ -93,7 +95,7 @@ export default function PatientPage() {
 
    // ---------- 3) Update patient's latest data in Firestore ----------
    useEffect(() => {
-    if (patient && sensorHistory && sensorHistory.length > 0) {
+    if (patient && sensorHistory && sensorHistory.length > 0 && firestore) {
       const latestReading = sensorHistory[0];
       const latestStatus = getPatientStatusFromSensorData(latestReading);
 
@@ -113,13 +115,16 @@ export default function PatientPage() {
   }, [patient, sensorHistory, firestore]);
 
   // ---------- 4) Loading / errors / 404 ----------
-  if (!isLoadingPatient && !patient) {
+  // This is the critical check. We wait until BOTH user and patient loading are finished.
+  const isStillLoading = isLoadingPatient || isUserLoading;
+  
+  if (!isStillLoading && !patient) {
+    // If loading is done and we still have no patient, it's a 404.
+    // This can happen if the doc doesn't exist or if security rules deny access.
     notFound();
   }
 
-  const isLoading = isLoadingPatient;
-
-  if (isLoading) {
+  if (isStillLoading) {
     return (
       <DashboardLayout>
         <main className="min-h-screen flex items-center justify-center">
@@ -143,6 +148,7 @@ export default function PatientPage() {
   }
 
   if (!patient) {
+    // This case will likely be pre-empted by the notFound() call above, but it's good for safety.
     return (
       <DashboardLayout>
         <main className="min-h-screen flex items-center justify-center">
