@@ -28,13 +28,16 @@ export default function PatientPage() {
   const params = useParams<{ id: string }>();
   const id = String(params.id);
   const firestore = useFirestore();
-  const { isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
 
   // ---------- 1) Patient from Firestore ----------
   const patientDocRef = useMemoFirebase(() => {
-    if (!firestore || !id) return null;
+    // CRITICAL FIX: Do not try to create the doc ref until the user is loaded.
+    // This prevents a race condition where the query runs before auth is ready,
+    // causing a permission error that incorrectly leads to a 404.
+    if (!firestore || !id || isUserLoading) return null;
     return doc(firestore, 'patients', id);
-  }, [firestore, id]);
+  }, [firestore, id, isUserLoading]);
 
   const {
     data: patient,
@@ -115,12 +118,11 @@ export default function PatientPage() {
   }, [patient, sensorHistory, firestore]);
 
   // ---------- 4) Loading / errors / 404 ----------
-  // This is the critical check. We wait until BOTH user and patient loading are finished.
   const isStillLoading = isLoadingPatient || isUserLoading;
   
   if (!isStillLoading && !patient) {
-    // If loading is done and we still have no patient, it's a 404.
-    // This can happen if the doc doesn't exist or if security rules deny access.
+    // If loading is done (user is loaded, doc fetch is complete) and we still have no patient,
+    // then it's a genuine 404 (or a permission error).
     notFound();
   }
 
