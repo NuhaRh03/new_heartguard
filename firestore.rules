@@ -20,6 +20,7 @@ service cloud.firestore {
     match /patients/{patientId} {
       allow create: if isOwner(request.resource.data);
       allow read: if isOwner(get(/databases/$(database)/documents/patients/$(patientId)).data);
+      allow list: if isSignedIn();
       allow update, delete: if isOwner(resource.data);
 
       match /sensorData/{readingId} {
