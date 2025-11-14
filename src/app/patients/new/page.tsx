@@ -16,12 +16,18 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Patient } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const patientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
+  email: z.string().email("Invalid email address.").optional().or(z.literal('')),
+  phone: z.string().optional(),
   birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
-  emergencyContact: z.string().min(10, "Enter a valid phone number."),
+  gender: z.enum(["Male", "Female", "Other"]),
+  emergencyContactName: z.string().min(2, "Emergency contact name is required."),
+  emergencyContactRelationship: z.string().min(2, "Relationship is required."),
+  emergencyContactPhone: z.string().min(10, "Enter a valid phone number."),
   historicalDiseases: z.string().optional(),
   currentMedications: z.string().optional(),
 });
@@ -39,13 +45,19 @@ export default function AddPatientPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
       name: "Maria Garcia",
       birthDate: "1988-05-20",
-      emergencyContact: "+212698765432",
+      gender: "Female",
+      email: "maria.garcia@example.com",
+      phone: "555-0102",
+      emergencyContactName: "Juan Garcia",
+      emergencyContactRelationship: "Husband",
+      emergencyContactPhone: "+212698765432",
       historicalDiseases: "Hypertension",
       currentMedications: "Amlodipine"
     }
@@ -60,8 +72,15 @@ export default function AddPatientPage() {
     startTransition(async () => {
         const patientData: Omit<Patient, 'id'> = {
             name: data.name,
+            email: data.email,
+            phone: data.phone,
             birthDate: data.birthDate,
-            emergencyContact: data.emergencyContact,
+            gender: data.gender,
+            emergencyContact: {
+              name: data.emergencyContactName,
+              relationship: data.emergencyContactRelationship,
+              phone: data.emergencyContactPhone,
+            },
             historicalDiseases: data.historicalDiseases ? data.historicalDiseases.split(',').map(s => s.trim()).filter(Boolean) : [],
             currentMedications: data.currentMedications ? data.currentMedications.split(',').map(s => s.trim()).filter(Boolean) : [],
             createdBy: doctor.uid,
@@ -76,13 +95,6 @@ export default function AddPatientPage() {
             description: `${data.name} has been added to your patient list.`,
         });
 
-        reset({
-          name: "David Johnson",
-          birthDate: "1975-11-10",
-          emergencyContact: "+212611223344",
-          historicalDiseases: "Diabetes Type 2",
-          currentMedications: "Metformin"
-        });
         router.push('/');
     });
   };
@@ -112,16 +124,63 @@ export default function AddPatientPage() {
                                 {errors.name && <p className="text-destructive text-sm mt-1">{errors.name.message}</p>}
                             </div>
                             <div className="space-y-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input id="email" {...register("email")} placeholder="e.g. john.doe@example.com" />
+                                {errors.email && <p className="text-destructive text-sm mt-1">{errors.email.message}</p>}
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <Input id="phone" {...register("phone")} placeholder="e.g. 555-0101" />
+                                {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone.message}</p>}
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="birthDate">Date of Birth</Label>
                                 <Input id="birthDate" type="date" {...register("birthDate")} />
                                 {errors.birthDate && <p className="text-destructive text-sm mt-1">{errors.birthDate.message}</p>}
                             </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="gender">Gender</Label>
+                                <Controller
+                                  control={control}
+                                  name="gender"
+                                  render={({ field }) => (
+                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <SelectTrigger id="gender">
+                                            <SelectValue placeholder="Select gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Male">Male</SelectItem>
+                                            <SelectItem value="Female">Female</SelectItem>
+                                            <SelectItem value="Other">Other</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                  )}
+                                />
+                                {errors.gender && <p className="text-destructive text-sm mt-1">{errors.gender.message}</p>}
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="emergencyContact">Emergency Contact Number</Label>
-                            <Input id="emergencyContact" {...register("emergencyContact")} placeholder="e.g. +212612345678"/>
-                            {errors.emergencyContact && <p className="text-destructive text-sm mt-1">{errors.emergencyContact.message}</p>}
+
+                         <div className="space-y-4 border-t pt-6">
+                            <Label className="font-semibold">Emergency Contact</Label>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                               <div className="space-y-2">
+                                    <Label htmlFor="emergencyContactName">Full Name</Label>
+                                    <Input id="emergencyContactName" {...register("emergencyContactName")} />
+                                    {errors.emergencyContactName && <p className="text-destructive text-sm mt-1">{errors.emergencyContactName.message}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                                    <Input id="emergencyContactRelationship" {...register("emergencyContactRelationship")} />
+                                    {errors.emergencyContactRelationship && <p className="text-destructive text-sm mt-1">{errors.emergencyContactRelationship.message}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emergencyContactPhone">Phone Number</Label>
+                                    <Input id="emergencyContactPhone" {...register("emergencyContactPhone")} />
+                                    {errors.emergencyContactPhone && <p className="text-destructive text-sm mt-1">{errors.emergencyContactPhone.message}</p>}
+                                </div>
+                            </div>
                         </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="historicalDiseases">Historical Diseases (comma-separated)</Label>
                             <Textarea id="historicalDiseases" {...register("historicalDiseases")} placeholder="e.g., Diabetes, Asthma" />

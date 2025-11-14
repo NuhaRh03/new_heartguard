@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, notFound } from 'next/navigation';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import {
   getDatabase,
   ref,
@@ -101,17 +101,13 @@ export default function PatientPage() {
       if (latestReading.timestamp !== patient.lastReadingAt || patient.status !== latestStatus) {
          const patientRef = doc(firestore, 'patients', patient.id);
          
-         // Use dynamic import to avoid server-side issues
-         import('firebase/firestore').then(({ updateDoc }) => {
-            updateDoc(patientRef, {
-                latestSensorData: {
-                    // Make sure to spread all fields of the reading
-                    ...latestReading,
-                },
-                lastReadingAt: latestReading.timestamp,
-                status: latestStatus,
-            }).catch(err => console.error("Failed to update patient latest data:", err));
-         });
+         updateDoc(patientRef, {
+            latestSensorData: {
+                ...latestReading,
+            },
+            lastReadingAt: latestReading.timestamp,
+            status: latestStatus,
+        }).catch(err => console.error("Failed to update patient latest data:", err));
       }
     }
   }, [patient, sensorHistory, firestore]);
@@ -169,8 +165,8 @@ export default function PatientPage() {
             <SensorHistory sensorHistory={sensorHistory} isLoading={isLoadingHistory} />
           </div>
           <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-            <PatientInfoCard patient={patient} />
             <AnomalyDetector patient={patient} sensorHistory={sensorHistory} />
+            <PatientInfoCard patient={patient} />
           </div>
         </div>
       </main>

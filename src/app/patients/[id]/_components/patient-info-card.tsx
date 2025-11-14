@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Phone, FileText, Pill } from "lucide-react";
+import { User, Phone, Mail } from "lucide-react";
 import type { Patient } from "@/lib/types";
+import { Separator } from "@/components/ui/separator";
 
 interface PatientInfoCardProps {
   patient: Patient;
@@ -26,39 +27,40 @@ export function PatientInfoCard({ patient }: PatientInfoCardProps) {
       <CardHeader>
         <CardTitle>Patient Information</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <h3 className="font-semibold flex items-center gap-2">
-            <User size={16} /> Contact Details
-          </h3>
-          <InfoRow
-            icon={<Phone size={14} />}
-            label="Emergency Contact"
-            value={patient.emergencyContact}
-          />
+      <CardContent className="space-y-4">
+        <div className="space-y-3">
+            <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <User size={16} /> Contact Details
+            </h3>
+            <InfoRow
+                icon={<Mail size={14} />}
+                label="Email"
+                value={patient.email}
+            />
+             <InfoRow
+                icon={<Phone size={14} />}
+                label="Phone"
+                value={patient.phone}
+            />
         </div>
+        
+        <Separator />
 
-        {patient.historicalDiseases && patient.historicalDiseases.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold flex items-center gap-2">
-              <FileText size={16} /> Medical History
+        <div className="space-y-3">
+            <h3 className="font-semibold flex items-center gap-2 text-sm text-destructive">
+                <User size={16} /> Emergency Contact
             </h3>
-            <p className="text-sm text-muted-foreground">
-              {patient.historicalDiseases.join(", ")}
-            </p>
-          </div>
-        )}
-
-        {patient.currentMedications && patient.currentMedications.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Pill size={16} /> Current Medications
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {patient.currentMedications.join(", ")}
-            </p>
-          </div>
-        )}
+            <InfoRow
+                icon={<User size={14} />}
+                label={`Name (${patient.emergencyContact.relationship})`}
+                value={patient.emergencyContact.name}
+            />
+             <InfoRow
+                icon={<Phone size={14} />}
+                label="Phone"
+                value={patient.emergencyContact.phone}
+            />
+        </div>
       </CardContent>
     </Card>
   );

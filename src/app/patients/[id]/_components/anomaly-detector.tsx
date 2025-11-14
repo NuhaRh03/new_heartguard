@@ -34,11 +34,10 @@ export function AnomalyDetector({ patient, sensorHistory }: AnomalyDetectorProps
       const formattedSensorData = sensorHistory.map(d => ({
         timestamp: d.timestamp,
         heartRate: d.heartRate,
-        roomOxygen: d.roomOxygen,
+        o2Saturation: d.o2Saturation,
         roomTemperature: d.roomTemperature,
         patientTemperature: d.patientTemperature,
         roomHumidity: d.roomHumidity,
-        gasValue: d.gasValue,
       }));
 
       const response = await runAnomalyDetection({

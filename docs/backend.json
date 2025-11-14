@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "PatientProfile": {
@@ -19,9 +20,29 @@
           "description": "The patient's date of birth.",
           "format": "date"
         },
+        "gender": {
+            "type": "string",
+            "enum": ["Male", "Female", "Other"],
+            "description": "The patient's gender."
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+            "description": "The patient's email address."
+        },
+        "phone": {
+            "type": "string",
+            "description": "The patient's phone number."
+        },
         "emergencyContact": {
-          "type": "string",
-          "description": "The patient's emergency contact number."
+            "type": "object",
+            "description": "The patient's emergency contact details.",
+            "properties": {
+                "name": {"type": "string"},
+                "relationship": {"type": "string"},
+                "phone": {"type": "string"}
+            },
+            "required": ["name", "relationship", "phone"]
         },
         "historicalDiseases": {
           "type": "array",
@@ -63,6 +84,7 @@
       "required": [
         "name",
         "birthDate",
+        "gender",
         "emergencyContact",
         "createdBy"
       ]
@@ -86,9 +108,9 @@
           "type": "number",
           "description": "Patient's heart rate (beats per minute)."
         },
-        "roomOxygen": {
+        "o2Saturation": {
           "type": "number",
-          "description": "Oxygen level in the room (%)."
+          "description": "Patient's O2 saturation level (%)."
         },
         "roomHumidity": {
           "type": "number",
@@ -102,10 +124,6 @@
             "type": "number",
             "description": "Patient's body temperature (°C)."
         },
-        "gasValue": {
-            "type": "number",
-            "description": "Gas sensor value (e.g., for air quality)."
-        },
         "collectedBy": {
           "type": "string",
           "description": "UID of the doctor who collected the data."
@@ -114,11 +132,10 @@
       "required": [
         "timestamp",
         "heartRate",
-        "roomOxygen",
+        "o2Saturation",
         "roomHumidity",
         "roomTemperature",
         "patientTemperature",
-        "gasValue",
         "collectedBy"
       ]
     },

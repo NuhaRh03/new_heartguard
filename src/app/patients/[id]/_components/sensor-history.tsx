@@ -35,8 +35,7 @@ export function SensorHistory({ sensorHistory, isLoading }: SensorHistoryProps) 
                             <TableHead>Status</TableHead>
                             <TableHead>Heart Rate</TableHead>
                             <TableHead>Patient Temp</TableHead>
-                            <TableHead>Room Temp</TableHead>
-                            <TableHead>Room O₂</TableHead>
+                            <TableHead>O₂ Saturation</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -44,7 +43,6 @@ export function SensorHistory({ sensorHistory, isLoading }: SensorHistoryProps) 
                             <TableRow key={i}>
                                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                 <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -67,8 +65,7 @@ export function SensorHistory({ sensorHistory, isLoading }: SensorHistoryProps) 
                                     </TableCell>
                                     <TableCell>{reading.heartRate.toFixed(0)} bpm</TableCell>
                                     <TableCell>{reading.patientTemperature.toFixed(1)} °C</TableCell>
-                                    <TableCell>{reading.roomTemperature.toFixed(1)} °C</TableCell>
-                                    <TableCell>{reading.roomOxygen.toFixed(1)} %</TableCell>
+                                    <TableCell>{reading.o2Saturation.toFixed(1)} %</TableCell>
                                 </TableRow>
                             )
                         })}

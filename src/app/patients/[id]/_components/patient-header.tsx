@@ -42,6 +42,8 @@ export function PatientHeader({ patient }: PatientHeaderProps) {
         <h1 className="text-2xl md:text-3xl font-bold">{patient.name}</h1>
         <div className="flex items-center gap-2 text-muted-foreground">
           {age !== null ? <span>{age} years old</span> : <span>...</span>}
+          <span>&bull;</span>
+          <span>{patient.gender}</span>
            <span>&bull;</span>
            <Badge
               variant={

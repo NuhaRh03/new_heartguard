@@ -16,11 +16,10 @@ const PredictiveAnomalyDetectionInputSchema = z.object({
     z.object({
       timestamp: z.string().describe('The timestamp of the sensor reading.'),
       heartRate: z.number().describe('The heart rate of the patient in beats per minute.'),
-      roomOxygen: z.number().describe('The room oxygen level in percent.'),
+      o2Saturation: z.number().describe('The O2 saturation of the patient in percent.'),
       roomTemperature: z.number().describe('The room temperature in Celsius.'),
       patientTemperature: z.number().describe('The patient temperature in Celsius.'),
       roomHumidity: z.number().describe('The room humidity in percent.'),
-      gasValue: z.number().describe('The gas sensor value for air quality in ppm.'),
     })
   ).describe('An array of sensor data for the patient.'),
   alertThreshold: z.number().describe('The threshold for anomaly level to trigger an alert.'),
@@ -48,10 +47,10 @@ const prompt = ai.definePrompt({
 
   Sensor Data:
   {{#each sensorData}}
-  - Timestamp: {{timestamp}}, Heart Rate: {{heartRate}} bpm, Patient Temp: {{patientTemperature}}°C, Room Temp: {{roomTemperature}}°C, Room O₂: {{roomOxygen}}%, Room Humidity: {{roomHumidity}}%, Gas Value: {{gasValue}} ppm
+  - Timestamp: {{timestamp}}, Heart Rate: {{heartRate}} bpm, Patient Temp: {{patientTemperature}}°C, Room Temp: {{roomTemperature}}°C, O₂ Saturation: {{o2Saturation}}%, Room Humidity: {{roomHumidity}}%
   {{/each}}
 
-  Consider the relationships between different sensor readings and identify any unusual patterns or deviations from the norm. A high patient temperature, or very high/low heart rate are significant indicators.
+  Consider the relationships between different sensor readings and identify any unusual patterns or deviations from the norm. A high patient temperature, low O2 saturation, or very high/low heart rate are significant indicators.
 
   Based on the anomaly level and the alert threshold of {{alertThreshold}}, determine whether an alert should be triggered.
 
