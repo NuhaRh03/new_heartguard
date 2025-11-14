@@ -67,7 +67,7 @@ export function AnomalyDetector({ patient, sensorHistory }: AnomalyDetectorProps
   };
 
   return (
-    <Card>
+    <Card className="rounded-xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <WandSparkles className="text-primary" />
@@ -99,7 +99,7 @@ export function AnomalyDetector({ patient, sensorHistory }: AnomalyDetectorProps
         
         {result && (
           <div className='space-y-4'>
-            <Alert variant={result.alertTriggered ? "destructive" : "default"} className={!result.alertTriggered ? 'bg-accent/20' : ''}>
+            <Alert variant={result.alertTriggered ? "destructive" : "default"} className={!result.alertTriggered ? 'bg-accent/20 rounded-xl' : 'rounded-xl'}>
               {result.alertTriggered ? <TriangleAlert className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4 text-accent" />}
               <AlertTitle>Analysis Complete</AlertTitle>
               <AlertDescription>{result.explanation}</AlertDescription>

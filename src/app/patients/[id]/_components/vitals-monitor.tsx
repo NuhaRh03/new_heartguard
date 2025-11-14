@@ -23,7 +23,7 @@ export function VitalsMonitor({ patient }: VitalsMonitorProps) {
 
   if (!currentData) {
     return (
-        <Card>
+        <Card className="rounded-xl">
             <CardHeader>
                 <CardTitle>Live Vitals</CardTitle>
             </CardHeader>
@@ -34,10 +34,10 @@ export function VitalsMonitor({ patient }: VitalsMonitorProps) {
     );
   }
 
-  const chartData = [{ ...currentData, timestamp: patient.last_update || new Date().toISOString() }];
+  const chartData = [{ ...currentData, timestamp: patient.lastReadingAt || new Date().toISOString() }];
 
   return (
-    <Card>
+    <Card className="rounded-xl">
         <CardHeader>
             <CardTitle>Live Vitals</CardTitle>
         </CardHeader>

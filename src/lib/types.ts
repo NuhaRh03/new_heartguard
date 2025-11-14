@@ -13,12 +13,12 @@ export interface Patient {
   name: string;
   birthDate: string;
   emergencyContact: string;
-  historical_diseases: string[];
-  current_medications: string[];
-  last_update?: string;
+  historicalDiseases: string[];
+  currentMedications: string[];
   createdBy: string; 
   status?: 'stable' | 'warning' | 'critical' | 'unknown';
-  latestSensorData?: SensorData;
+  lastReadingAt?: string; // ISO string
+  latestSensorData?: Omit<SensorData, 'id'>;
 }
 
 export interface SensorData {
@@ -39,7 +39,7 @@ export interface PatientStatus {
   label: string;
 }
 
-export const getPatientStatusFromSensorData = (reading: SensorData): PatientStatus['level'] => {
+export const getPatientStatusFromSensorData = (reading: Omit<SensorData, 'id'>): PatientStatus['level'] => {
   if (reading.heartRate < 40 || reading.heartRate > 140 || reading.patientTemperature > 39.5 || reading.gasValue > 800) {
     return 'critical';
   }

@@ -55,14 +55,15 @@
             "type": "string",
             "format": "date-time",
             "description": "Timestamp of the last sensor reading."
+        },
+        "latestSensorData": {
+          "$ref": "#/entities/SensorData"
         }
       },
       "required": [
-        "id",
         "name",
         "birthDate",
         "emergencyContact",
-        "createdAt",
         "createdBy"
       ]
     },
@@ -111,7 +112,6 @@
         }
       },
       "required": [
-        "id",
         "timestamp",
         "heartRate",
         "roomOxygen",
@@ -166,8 +166,7 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
@@ -175,9 +174,8 @@
       {
         "path": "/doctors/{doctorId}",
         "definition": {
-          "entityName": "DoctorProfile",
           "schema": {
-            "$ref": "#/backend/entities/DoctorProfile"
+            "$ref": "#/entities/DoctorProfile"
           },
           "description": "Collection of doctor profiles. Each document ID is the doctor's Auth UID."
         }
@@ -185,9 +183,8 @@
       {
         "path": "/patients/{patientId}",
         "definition": {
-          "entityName": "PatientProfile",
           "schema": {
-            "$ref": "#/backend/entities/PatientProfile"
+            "$ref": "#/entities/PatientProfile"
           },
           "description": "Top-level collection of patient profiles. Access is controlled by the `createdBy` field."
         }
@@ -195,11 +192,10 @@
       {
         "path": "/patients/{patientId}/sensorData/{readingId}",
         "definition": {
-          "entityName": "SensorData",
           "schema": {
-            "$ref": "#/backend/entities/SensorData"
+            "$ref": "#/entities/SensorData"
           },
-          "description": "Subcollection of sensor readings for a patient. Access is controlled by the `collectedBy` field on the parent patient document."
+          "description": "Subcollection of sensor readings for a patient. Access is controlled by the `createdBy` field on the parent patient document."
         }
       }
     ],

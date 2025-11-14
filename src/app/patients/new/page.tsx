@@ -22,8 +22,8 @@ const patientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
   emergencyContact: z.string().min(10, "Enter a valid phone number."),
-  historical_diseases: z.string().optional(),
-  current_medications: z.string().optional(),
+  historicalDiseases: z.string().optional(),
+  currentMedications: z.string().optional(),
 });
 
 type PatientFormData = z.infer<typeof patientSchema>;
@@ -46,8 +46,8 @@ export default function AddPatientPage() {
       name: "Maria Garcia",
       birthDate: "1988-05-20",
       emergencyContact: "+212698765432",
-      historical_diseases: "Hypertension",
-      current_medications: "Amlodipine"
+      historicalDiseases: "Hypertension",
+      currentMedications: "Amlodipine"
     }
   });
 
@@ -58,13 +58,14 @@ export default function AddPatientPage() {
     }
 
     startTransition(async () => {
-        const patientData: Omit<Patient, 'id' | 'last_update' | 'sensors'> = {
+        const patientData: Omit<Patient, 'id'> = {
             name: data.name,
             birthDate: data.birthDate,
             emergencyContact: data.emergencyContact,
-            historical_diseases: data.historical_diseases ? data.historical_diseases.split(',').map(s => s.trim()).filter(Boolean) : [],
-            current_medications: data.current_medications ? data.current_medications.split(',').map(s => s.trim()).filter(Boolean) : [],
+            historicalDiseases: data.historicalDiseases ? data.historicalDiseases.split(',').map(s => s.trim()).filter(Boolean) : [],
+            currentMedications: data.currentMedications ? data.currentMedications.split(',').map(s => s.trim()).filter(Boolean) : [],
             createdBy: doctor.uid,
+            status: 'unknown',
         };
 
         const patientsCollection = collection(firestore, 'patients');
@@ -79,10 +80,10 @@ export default function AddPatientPage() {
           name: "David Johnson",
           birthDate: "1975-11-10",
           emergencyContact: "+212611223344",
-          historical_diseases: "Diabetes Type 2",
-          current_medications: "Metformin"
+          historicalDiseases: "Diabetes Type 2",
+          currentMedications: "Metformin"
         });
-        // router.push('/'); // Commented out to allow adding multiple patients
+        router.push('/');
     });
   };
 
@@ -122,18 +123,18 @@ export default function AddPatientPage() {
                             {errors.emergencyContact && <p className="text-destructive text-sm mt-1">{errors.emergencyContact.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="historical_diseases">Historical Diseases (comma-separated)</Label>
-                            <Textarea id="historical_diseases" {...register("historical_diseases")} placeholder="e.g., Diabetes, Asthma" />
-                            {errors.historical_diseases && <p className="text-destructive text-sm mt-1">{errors.historical_diseases.message}</p>}
+                            <Label htmlFor="historicalDiseases">Historical Diseases (comma-separated)</Label>
+                            <Textarea id="historicalDiseases" {...register("historicalDiseases")} placeholder="e.g., Diabetes, Asthma" />
+                            {errors.historicalDiseases && <p className="text-destructive text-sm mt-1">{errors.historicalDiseases.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="current_medications">Current Medications (comma-separated)</Label>
-                            <Textarea id="current_medications" {...register("current_medications")} placeholder="e.g., Metformin, Lisinopril" />
-                            {errors.current_medications && <p className="text-destructive text-sm mt-1">{errors.current_medications.message}</p>}
+                            <Label htmlFor="currentMedications">Current Medications (comma-separated)</Label>
+                            <Textarea id="currentMedications" {...register("currentMedications")} placeholder="e.g., Metformin, Lisinopril" />
+                            {errors.currentMedications && <p className="text-destructive text-sm mt-1">{errors.currentMedications.message}</p>}
                         </div>
                         <div className="flex justify-end">
                             <Button type="submit" disabled={isPending}>
-                                {isPending ? 'Adding Patient...' : 'Add Another Patient'}
+                                {isPending ? 'Adding Patient...' : 'Add Patient'}
                             </Button>
                         </div>
                     </form>

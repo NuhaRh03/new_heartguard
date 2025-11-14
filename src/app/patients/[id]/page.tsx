@@ -8,7 +8,7 @@ import { AnomalyDetector } from "./_components/anomaly-detector";
 import type { Patient, SensorData } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, doc, addDoc, updateDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore";
+import { collection, doc, addDoc, updateDoc, query, orderBy, limit } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +51,6 @@ export default function PatientPage() {
       description: `Live sensor monitoring has started for ${patient.name}.`,
     });
 
-    // Simulate new sensor data based on your snippet
     const now = new Date();
     const newSensorReading: Omit<SensorData, 'id'> = {
       timestamp: now.toISOString(),
@@ -64,14 +63,9 @@ export default function PatientPage() {
       collectedBy: user.uid,
     };
     
-    // Add the new reading to the subcollection
-    const docRef = await addDoc(sensorDataColRef, newSensorReading);
-    const readingWithId = { ...newSensorReading, id: docRef.id };
+    await addDoc(sensorDataColRef, newSensorReading);
+    const status = getPatientStatusFromSensorData(newSensorReading);
 
-    // Determine status from the new reading
-    const status = getPatientStatusFromSensorData(readingWithId);
-
-    // Update the main patient document
     await updateDoc(patientDocRef, {
       status: status,
       lastReadingAt: now.toISOString(),
@@ -79,7 +73,6 @@ export default function PatientPage() {
     });
   }
 
-  // First, handle the loading state
   if (isPatientLoading) {
     return (
       <DashboardLayout>
@@ -93,12 +86,12 @@ export default function PatientPage() {
           </div>
           <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
             <div className="space-y-6 md:col-span-3 lg:col-span-3">
-               <Skeleton className="h-[300px] w-full" />
-               <Skeleton className="h-[300px] w-full" />
+               <Skeleton className="h-[300px] w-full rounded-xl" />
+               <Skeleton className="h-[300px] w-full rounded-xl" />
             </div>
             <div className="space-y-6 lg:col-span-1">
-              <Skeleton className="h-[200px] w-full" />
-              <Skeleton className="h-[400px] w-full" />
+              <Skeleton className="h-[200px] w-full rounded-xl" />
+              <Skeleton className="h-[400px] w-full rounded-xl" />
             </div>
           </div>
         </div>
@@ -106,12 +99,10 @@ export default function PatientPage() {
     );
   }
 
-  // After loading, if patient is still null, it means it wasn't found or user doesn't have permission
   if (!patient) {
     notFound();
   }
   
-  // If we get here, patient exists.
   return (
     <DashboardLayout>
       <div className="flex-1 space-y-6 p-4 md:p-8">

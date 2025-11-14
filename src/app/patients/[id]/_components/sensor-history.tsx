@@ -22,7 +22,7 @@ export function SensorHistory({ sensorHistory, isLoading }: SensorHistoryProps) 
     }
 
     return (
-        <Card>
+        <Card className="rounded-xl">
             <CardHeader>
                 <CardTitle>Recent Sensor History</CardTitle>
                 <CardDescription>A log of the last 10 sensor readings for this patient.</CardDescription>
@@ -42,7 +42,7 @@ export function SensorHistory({ sensorHistory, isLoading }: SensorHistoryProps) 
                         {isLoading && Array.from({length: 5}).map((_, i) => (
                             <TableRow key={i}>
                                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>

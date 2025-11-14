@@ -15,33 +15,23 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
 import { Patient, getPatientStatusAppearance } from "@/lib/types";
-import { useUser, useFirestore } from "@/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { useEffect, useState } from "react";
-
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const patientsQuery = useMemoFirebase(() => {
     if (user && firestore) {
-      const q = query(collection(firestore, 'patients'), where('createdBy', '==', user.uid));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const patientData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
-        setPatients(patientData);
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Error fetching patients:", error);
-        setIsLoading(false);
-      });
-
-      return () => unsubscribe();
+      return query(collection(firestore, 'patients'), where('createdBy', '==', user.uid));
     }
+    return null;
   }, [user, firestore]);
+  
+  const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
 
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return NaN;
@@ -67,7 +57,7 @@ export default function DashboardPage() {
             </Link>
           </Button>
         </div>
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader>
             <CardTitle>My Patients</CardTitle>
           </CardHeader>
@@ -89,17 +79,15 @@ export default function DashboardPage() {
                   <TableRow key={i}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>...</AvatarFallback>
-                        </Avatar>
-                        <div className="font-medium">Loading...</div>
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <Skeleton className="h-4 w-32" />
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">...</TableCell>
-                    <TableCell><Badge>Loading...</Badge></TableCell>
-                    <TableCell className="hidden lg:table-cell">...</TableCell>
-                    <TableCell className="hidden lg:table-cell">...</TableCell>
-                    <TableCell className="hidden md:table-cell">...</TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-8" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="text-right"><Button variant="ghost" size="sm" disabled>View</Button></TableCell>
                   </TableRow>
                 ))}
