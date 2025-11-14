@@ -18,10 +18,12 @@ service cloud.firestore {
     }
 
     // Patients can only be created by a signed-in user for themselves.
-    // They can only be read, updated, or deleted by the user who created them.
+    // They can be read by any signed-in user, but queries must enforce ownership.
+    // They can only be updated, or deleted by the user who created them.
     match /patients/{patientId} {
       allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
-      allow read, update, delete: if isOwner(resource.data);
+      allow read: if isSignedIn();
+      allow update, delete: if isOwner(resource.data);
 
       // Sensor data can be created by the patient's owner.
       // It can be read by the patient's owner.
