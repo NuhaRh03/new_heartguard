@@ -134,7 +134,7 @@ export default function DashboardPage() {
                         {latestReading?.patientTemperature ? `${latestReading.patientTemperature.toFixed(1)} °C` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {latestReading?.roomTemperature ? latestReading.roomTemperature.toFixed(1) : 'N/A'}
+                        {latestReading?.roomTemperature ? `${latestReading.roomTemperature.toFixed(1)} °C` : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button asChild variant="link">

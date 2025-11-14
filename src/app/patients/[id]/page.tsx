@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, notFound } from 'next/navigation';
-import { collection, doc, query, orderBy, limit, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, query, orderBy, limit, addDoc, updateDoc } from 'firebase/firestore';
 import { useDoc, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import type { Patient, SensorData } from '@/lib/types';
 import { PatientInfoCard } from './_components/patient-info-card';
