@@ -1,6 +1,6 @@
 # **App Name**: PulseGuard
 
-## Core Features:
+## Core Features:nnn
 
 - Patient Account Creation: Doctors can create and manage patient accounts, including personal details, medical history, and sensor data.
 - Doctor Account Management: Allow doctors to manage their profiles, including name, age, picture, and license information.
