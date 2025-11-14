@@ -3,48 +3,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helpers -----------------------------------------------------------
-    function signedIn() {
+    function isSignedIn() {
       return request.auth != null;
     }
-    function isSelf(uid) {
-      return signedIn() && request.auth.uid == uid;
-    }
-    function isAdmin() {
-      return signedIn() && request.auth.token.admin == true;
-    }
-    // Prevent changing ownership once a doc exists
-    function ownerUnchanged() {
-      return request.resource.data.createdBy == resource.data.createdBy;
-    }
-    // Enforce that the creator sets themselves as owner on create
-    function createdByIsSelf() {
-      return signedIn() && request.resource.data.createdBy == request.auth.uid;
+
+    function isOwner(docData) {
+      return isSignedIn() && request.auth.uid == docData.createdBy;
     }
 
-    // --- Doctors -----------------------------------------------------------
-    // /doctors/{doctorId} is owned by the user whose UID == doctorId
+    // Doctor profiles can be read by anyone but only written by the owner
     match /doctors/{doctorId} {
-      allow read, write: if isSelf(doctorId) || isAdmin();
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == doctorId;
     }
 
-    // --- Patients ----------------------------------------------------------
-    // Each patient doc has: { ..., createdBy: <doctorUid>, ... }
+    // Patients can only be created by a signed-in user for themselves.
+    // They can only be read, updated, or deleted by the user who created them.
     match /patients/{patientId} {
-      // Create: the doctor must set themselves as owner
-      allow create: if createdByIsSelf() || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data);
 
-      // Read, Update, Delete: only the owner (or admin) can read or modify
-      allow read, update, delete: if (signedIn() && resource.data.createdBy == request.auth.uid) || isAdmin();
-    }
-
-    // --- Optional public/admin spaces you had before -----------------------
-    match /public/{document=**} {
-      allow read: if true;
-      allow write: if false;
-    }
-    match /admin/{document=**} {
-      allow read, write: if isAdmin();
+      // Sensor data can be created by the patient's owner.
+      // It can be read by the patient's owner.
+      match /sensorData/{readingId} {
+        allow create: if isOwner(get(/databases/$(database)/documents/patients/$(patientId)).data);
+        allow read: if isOwner(get(/databases/$(database)/documents/patients/$(patientId)).data);
+        allow write: if false; // Disallow updates/deletes for data integrity
+      }
     }
   }
 }

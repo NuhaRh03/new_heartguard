@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { getPatientStatusFromReading, type Patient, type SensorData } from "@/lib/types";
+import { getPatientStatusAppearance, type Patient } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 interface PatientHeaderProps {
@@ -22,7 +22,7 @@ function calculateAge(birthDate: string): number {
 }
 
 export function PatientHeader({ patient }: PatientHeaderProps) {
-  const status = patient.sensors ? getPatientStatusFromReading(patient.sensors as SensorData) : { level: 'unknown', label: 'No Data' };
+  const status = getPatientStatusAppearance(patient.status);
   const [age, setAge] = useState<number | null>(null);
 
   useEffect(() => {

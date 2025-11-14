@@ -45,6 +45,16 @@
         "createdBy": {
           "type": "string",
           "description": "The UID of the doctor who created this patient profile."
+        },
+        "status": {
+            "type": "string",
+            "enum": ["stable", "warning", "critical", "unknown"],
+            "description": "The current status of the patient based on sensor readings."
+        },
+        "lastReadingAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the last sensor reading."
         }
       },
       "required": [
@@ -60,7 +70,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "SensorData",
       "type": "object",
-      "description": "Represents sensor data for a patient.",
+      "description": "Represents a single sensor data reading for a patient.",
       "properties": {
         "id": {
           "type": "string",
@@ -73,7 +83,7 @@
         },
         "heartRate": {
           "type": "number",
-          "description": "Patient's heartbeat (bpm)."
+          "description": "Patient's heart rate (bpm)."
         },
         "roomOxygen": {
           "type": "number",
@@ -87,6 +97,14 @@
           "type": "number",
           "description": "Temperature in the room (°C)."
         },
+        "patientTemperature": {
+            "type": "number",
+            "description": "Patient's body temperature (°C)."
+        },
+        "gasValue": {
+            "type": "number",
+            "description": "Ambient gas value (ppm)."
+        },
         "collectedBy": {
           "type": "string",
           "description": "UID of the doctor who collected the data."
@@ -99,6 +117,8 @@
         "roomOxygen",
         "roomHumidity",
         "roomTemperature",
+        "patientTemperature",
+        "gasValue",
         "collectedBy"
       ]
     },
@@ -179,10 +199,10 @@
           "schema": {
             "$ref": "#/backend/entities/SensorData"
           },
-          "description": "Subcollection of sensor readings for a patient. Access is controlled by the `collectedBy` field."
+          "description": "Subcollection of sensor readings for a patient. Access is controlled by the `collectedBy` field on the parent patient document."
         }
       }
     ],
-    "reasoning": "This structure uses a top-level `patients` collection for easier querying across all patients if needed in the future, while still maintaining security. Doctor profiles are kept separate in their own collection. Security rules are designed to ensure that doctors can only access patient data they have created (`createdBy` field) or sensor data they have collected (`collectedBy` field). This enforces ownership without relying on nested collections under each doctor, which can be restrictive for some query patterns. This model uses denormalization (storing doctor UIDs in patient and sensor data) to enable efficient and secure data access."
+    "reasoning": "This structure uses a top-level `patients` collection for easier querying across all patients if needed in the future, while still maintaining security. Doctor profiles are kept separate in their own collection. A `sensorData` subcollection is used to store time-series data for each patient. Security rules are designed to ensure that doctors can only access patient data they have created and the corresponding sensor data."
   }
 }

@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
-import { Patient, getPatientStatusFromReading } from "@/lib/types";
+import { Patient, getPatientStatusAppearance } from "@/lib/types";
 import { useUser, useFirestore } from "@/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -79,8 +79,8 @@ export default function DashboardPage() {
                   <TableHead className="hidden md:table-cell">Age</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Heart Rate</TableHead>
-                  <TableHead className="hidden lg:table-cell">O2 Level</TableHead>
-                  <TableHead className="hidden md:table-cell">Temp (°C)</TableHead>
+                  <TableHead className="hidden lg:table-cell">Patient Temp (°C)</TableHead>
+                  <TableHead className="hidden md:table-cell">Gas (ppm)</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -104,8 +104,8 @@ export default function DashboardPage() {
                   </TableRow>
                 ))}
                 {!isLoading && patients?.map((patient) => {
-                  const latestReading = patient.sensors;
-                  const status = latestReading ? getPatientStatusFromReading(latestReading) : { level: 'unknown', label: 'No Data' };
+                  const latestReading = patient.latestSensorData;
+                  const status = getPatientStatusAppearance(patient.status);
                   const age = calculateAge(patient.birthDate);
 
                   return (
@@ -143,13 +143,13 @@ export default function DashboardPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.heart_beat ? `${latestReading.heart_beat.toFixed(0)} bpm` : 'N/A'}
+                        {latestReading?.heartRate ? `${latestReading.heartRate.toFixed(0)} bpm` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.o2_level ? `${latestReading.o2_level.toFixed(1)}%` : 'N-A'}
+                        {latestReading?.patientTemperature ? `${latestReading.patientTemperature.toFixed(1)} °C` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {latestReading?.room_temperature ? latestReading.room_temperature.toFixed(1) : 'N/A'}
+                        {latestReading?.gasValue ? latestReading.gasValue.toFixed(0) : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button asChild variant="ghost" size="sm">

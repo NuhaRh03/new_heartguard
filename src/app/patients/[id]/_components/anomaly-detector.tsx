@@ -7,47 +7,38 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { WandSparkles, TriangleAlert, ShieldCheck } from 'lucide-react';
 import { runAnomalyDetection } from '../actions';
-import type { Patient } from '@/lib/types';
+import type { Patient, SensorData } from '@/lib/types';
 import type { PredictiveAnomalyDetectionOutput } from '@/ai/flows/predictive-anomaly-detection';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
 interface AnomalyDetectorProps {
   patient: Patient;
+  sensorHistory: SensorData[] | null;
 }
 
-export function AnomalyDetector({ patient }: AnomalyDetectorProps) {
+export function AnomalyDetector({ patient, sensorHistory }: AnomalyDetectorProps) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<PredictiveAnomalyDetectionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleDetection = () => {
-    if (!patient.sensors) {
+    if (!sensorHistory || sensorHistory.length === 0) {
         toast({ variant: "destructive", title: "No sensor data to analyze."});
         return;
     }
     setError(null);
     startTransition(async () => {
-      // The AI flow expects a different data structure, so we can't use it directly
-      // without updating it. For now, this will fail if used.
-      // This is a placeholder for a compatible AI flow.
-      toast({
-        variant: "destructive",
-        title: "AI Flow Incompatible",
-        description: "The AI model needs to be updated for the new data schema.",
-      });
-
-      /*
-      // This is what the call would look like if the AI flow was updated
-      const formattedSensorData = [{
-        timestamp: patient.last_update,
-        o2Level: patient.sensors.o2_level,
-        roomTemperature: patient.sensors.room_temperature,
-        patientTemperature: patient.sensors.room_temperature, // No patient temp in new schema
-        heartRate: patient.sensors.heart_beat,
-        roomHumidity: patient.sensors.humidity,
-      }];
+      // The AI flow expects a different data structure, so we need to map our sensor data
+      const formattedSensorData = sensorHistory.map(d => ({
+        timestamp: d.timestamp,
+        o2Level: d.roomOxygen, // AI model refers to o2Level
+        roomTemperature: d.roomTemperature,
+        patientTemperature: d.patientTemperature,
+        heartRate: d.heartRate,
+        roomHumidity: d.roomHumidity,
+      }));
 
       const response = await runAnomalyDetection({
         patientId: patient.id,
@@ -72,7 +63,6 @@ export function AnomalyDetector({ patient }: AnomalyDetectorProps) {
           description: response.error,
         });
       }
-      */
     });
   };
 
@@ -88,14 +78,14 @@ export function AnomalyDetector({ patient }: AnomalyDetectorProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={handleDetection} disabled={isPending || !patient.sensors} className="w-full">
+        <Button onClick={handleDetection} disabled={isPending || !sensorHistory || sensorHistory.length === 0} className="w-full">
           {isPending ? 'Analyzing...' : 'Run AI Analysis'}
         </Button>
 
         {isPending && (
           <div className="flex items-center justify-center space-x-2">
             <WandSparkles className="animate-pulse text-primary" />
-            <p className="text-sm text-muted-foreground">AI is analyzing the latest data point...</p>
+            <p className="text-sm text-muted-foreground">AI is analyzing historical data...</p>
           </div>
         )}
 

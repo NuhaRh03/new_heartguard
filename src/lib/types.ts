@@ -15,22 +15,22 @@ export interface Patient {
   emergencyContact: string;
   historical_diseases: string[];
   current_medications: string[];
-  last_update?: string; // or a Timestamp type if you prefer
-  createdBy: string; // UID of the doctor who created the patient
-  sensors?: {
-    heart_beat: number;
-    humidity: number;
-    o2_level: number;
-    room_temperature: number;
-  };
+  last_update?: string;
+  createdBy: string; 
+  status?: 'stable' | 'warning' | 'critical' | 'unknown';
+  latestSensorData?: SensorData;
 }
 
-// This is now part of the Patient type, but we can keep it for status calculation
 export interface SensorData {
-  heart_beat: number;
-  o2_level: number;
-  room_temperature: number;
-  humidity: number;
+  id: string;
+  timestamp: string; // ISO string
+  heartRate: number;
+  roomOxygen: number;
+  roomHumidity: number;
+  roomTemperature: number;
+  patientTemperature: number;
+  gasValue: number;
+  collectedBy: string;
 }
 
 
@@ -39,12 +39,26 @@ export interface PatientStatus {
   label: string;
 }
 
-export const getPatientStatusFromReading = (reading: SensorData): PatientStatus => {
-  if (reading.heart_beat > 120 || reading.heart_beat < 50 || reading.o2_level < 90) {
-    return { level: 'critical', label: 'Critical' };
+export const getPatientStatusFromSensorData = (reading: SensorData): PatientStatus['level'] => {
+  if (reading.heartRate < 40 || reading.heartRate > 140 || reading.patientTemperature > 39.5 || reading.gasValue > 800) {
+    return 'critical';
   }
-  if (reading.heart_beat > 100 || reading.heart_beat < 60 || reading.o2_level < 94) {
-    return { level: 'warning', label: 'Warning' };
+  if (reading.heartRate < 50 || reading.heartRate > 120 || reading.patientTemperature > 38.5 || reading.gasValue > 600) {
+    return 'warning';
   }
-  return { level: 'stable', label: 'Stable' };
+  return 'stable';
+};
+
+
+export const getPatientStatusAppearance = (status?: Patient['status']): PatientStatus => {
+  switch (status) {
+    case 'critical':
+      return { level: 'critical', label: 'Critical' };
+    case 'warning':
+      return { level: 'warning', label: 'Warning' };
+    case 'stable':
+      return { level: 'stable', label: 'Stable' };
+    default:
+      return { level: 'unknown', label: 'No Data' };
+  }
 };
