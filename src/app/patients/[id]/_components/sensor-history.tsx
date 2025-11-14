@@ -33,9 +33,9 @@ export function SensorHistory({ sensorHistory, isLoading }: SensorHistoryProps) 
                         <TableRow>
                             <TableHead>Timestamp</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Heart Rate</TableHead>
                             <TableHead>Patient Temp</TableHead>
-                            <TableHead>Gas Value</TableHead>
+                            <TableHead>Room Temp</TableHead>
+                            <TableHead>Room Humidity</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -63,9 +63,9 @@ export function SensorHistory({ sensorHistory, isLoading }: SensorHistoryProps) 
                                           {getStatusLabel(status)}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>{reading.heartRate.toFixed(0)} bpm</TableCell>
                                     <TableCell>{reading.patientTemperature.toFixed(1)} °C</TableCell>
-                                    <TableCell>{reading.gasValue.toFixed(0)} ppm</TableCell>
+                                    <TableCell>{reading.roomTemperature.toFixed(1)} °C</TableCell>
+                                    <TableCell>{reading.roomHumidity.toFixed(1)} %</TableCell>
                                 </TableRow>
                             )
                         })}

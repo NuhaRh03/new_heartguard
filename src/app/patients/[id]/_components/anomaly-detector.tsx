@@ -36,7 +36,6 @@ export function AnomalyDetector({ patient, sensorHistory }: AnomalyDetectorProps
         o2Level: d.roomOxygen, // AI model refers to o2Level
         roomTemperature: d.roomTemperature,
         patientTemperature: d.patientTemperature,
-        heartRate: d.heartRate,
         roomHumidity: d.roomHumidity,
       }));
 

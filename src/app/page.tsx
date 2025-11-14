@@ -68,9 +68,8 @@ export default function DashboardPage() {
                   <TableHead>Patient</TableHead>
                   <TableHead className="hidden md:table-cell">Age</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Heart Rate</TableHead>
                   <TableHead className="hidden lg:table-cell">Patient Temp (°C)</TableHead>
-                  <TableHead className="hidden md:table-cell">Gas (ppm)</TableHead>
+                  <TableHead className="hidden md:table-cell">Room Temp (°C)</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -85,7 +84,6 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-8" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="text-right"><Button variant="ghost" size="sm" disabled>View</Button></TableCell>
@@ -131,13 +129,10 @@ export default function DashboardPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.heartRate ? `${latestReading.heartRate.toFixed(0)} bpm` : 'N/A'}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
                         {latestReading?.patientTemperature ? `${latestReading.patientTemperature.toFixed(1)} °C` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {latestReading?.gasValue ? latestReading.gasValue.toFixed(0) : 'N/A'}
+                        {latestReading?.roomTemperature ? latestReading.roomTemperature.toFixed(1) : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button asChild variant="link">

@@ -18,7 +18,6 @@ const PredictiveAnomalyDetectionInputSchema = z.object({
       o2Level: z.number().describe('The oxygen level of the patient.'),
       roomTemperature: z.number().describe('The room temperature.'),
       patientTemperature: z.number().describe('The patient temperature.'),
-      heartRate: z.number().describe('The heart rate of the patient.'),
       roomHumidity: z.number().describe('The room humidity.'),
     })
   ).describe('An array of sensor data for the patient.'),
@@ -47,7 +46,7 @@ const prompt = ai.definePrompt({
 
   Sensor Data:
   {{#each sensorData}}
-  - Timestamp: {{timestamp}}, O2 Level: {{o2Level}}, Room Temperature: {{roomTemperature}}, Patient Temperature: {{patientTemperature}}, Heart Rate: {{heartRate}}, Room Humidity: {{roomHumidity}}
+  - Timestamp: {{timestamp}}, O2 Level: {{o2Level}}, Room Temperature: {{roomTemperature}}, Patient Temperature: {{patientTemperature}}, Room Humidity: {{roomHumidity}}
   {{/each}}
 
   Consider the relationships between different sensor readings and identify any unusual patterns or deviations from the norm.
