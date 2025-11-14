@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { Logo } from '@/components/icons';
 import { FirebaseError } from 'firebase/app';
 import { doc, setDoc } from 'firebase/firestore';
@@ -45,18 +45,22 @@ export default function LoginPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
+            const newDoctorName = 'Dr. Evelyn Reed';
+
+            // IMPORTANT: Update the user's Auth profile
+            await updateProfile(user, { displayName: newDoctorName });
+
             // Create a doctor profile document in Firestore
             const doctorDocRef = doc(firestore, 'doctors', user.uid);
             const newDoctorProfile: DoctorProfile = {
                 id: user.uid,
-                name: 'New Doctor',
-                dateOfBirth: new Date().toISOString().split('T')[0], // Default to today
-                age: 30, // Default age
-                speciality: 'General Practice', // Default specialty
+                name: newDoctorName,
+                dateOfBirth: "1982-03-15",
+                age: 42,
+                speciality: 'Cardiology',
                 idCardNumber: `DOC-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
             };
             
-            // Use standard setDoc and await it
             await setDoc(doctorDocRef, newDoctorProfile);
 
             toast({

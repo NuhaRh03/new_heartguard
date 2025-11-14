@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
-import { LogOut } from "lucide-react";
+import { LogOut, User as UserIcon } from "lucide-react"; // Import a user icon
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -39,13 +39,17 @@ export function UserNav() {
     }
   };
 
+  const getInitials = (name?: string | null) => {
+    if (!name) return user?.email?.charAt(0).toUpperCase() || 'D';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -61,7 +65,10 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/profile">Profile</Link>
+            <Link href="/profile" className="flex items-center">
+              <UserIcon className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
