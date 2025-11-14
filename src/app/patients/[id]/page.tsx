@@ -1,7 +1,7 @@
 
+
 'use client';
 import { notFound, useParams } from "next/navigation";
-import { PatientHeader } from "./_components/patient-header";
 import { VitalsMonitor } from "./_components/vitals-monitor";
 import { PatientInfoCard } from "./_components/patient-info-card";
 import { AnomalyDetector } from "./_components/anomaly-detector";
@@ -106,8 +106,7 @@ export default function PatientPage() {
   return (
     <DashboardLayout>
       <div className="flex-1 space-y-6 p-4 md:p-8">
-        <div className="flex justify-between items-start">
-          <PatientHeader patient={patient} />
+        <div className="flex justify-end items-start">
           <Button onClick={handleStartSensors}>
               <PlayCircle className="mr-2 h-4 w-4" />
               Start Sensors
@@ -119,8 +118,8 @@ export default function PatientPage() {
             <SensorHistory sensorHistory={sensorHistory} isLoading={isHistoryLoading} />
           </div>
           <div className="space-y-6 lg:col-span-1">
-            <AnomalyDetector patient={patient} sensorHistory={sensorHistory} />
             <PatientInfoCard patient={patient} />
+            <AnomalyDetector patient={patient} sensorHistory={sensorHistory} />
           </div>
         </div>
       </div>
