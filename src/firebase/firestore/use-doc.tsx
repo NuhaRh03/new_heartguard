@@ -36,12 +36,10 @@ export interface UseDocResult<T> {
  * @template T Optional type for document data. Defaults to any.
  * @param {DocumentReference<DocumentData> | null | undefined} docRef -
  * The Firestore DocumentReference. Waits if null/undefined.
- * @param {() => void} [onChecked] - Optional callback when the first check completes.
  * @returns {UseDocResult<T>} Object with data, isLoading, error.
  */
 export function useDoc<T = any>(
-  memoizedDocRef: DocumentReference<DocumentData> | null | undefined,
-  onChecked?: () => void,
+  memoizedDocRef: DocumentReference<DocumentData> | null | undefined
 ): UseDocResult<T> {
   type StateDataType = WithId<T> | null;
 
@@ -51,8 +49,9 @@ export function useDoc<T = any>(
 
   useEffect(() => {
     if (!memoizedDocRef) {
+      setData(null);
       setIsLoading(false);
-      onChecked?.();
+      setError(null);
       return;
     }
 
@@ -71,7 +70,6 @@ export function useDoc<T = any>(
         }
         setError(null);
         setIsLoading(false);
-        onChecked?.();
       },
       (error: FirestoreError) => {
         const contextualError = new FirestorePermissionError({
@@ -82,14 +80,13 @@ export function useDoc<T = any>(
         setError(contextualError)
         setData(null)
         setIsLoading(false)
-        onChecked?.();
         // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
     return () => unsubscribe();
-  }, [memoizedDocRef, onChecked]); 
+  }, [memoizedDocRef]); 
 
   return { data, isLoading, error };
 }

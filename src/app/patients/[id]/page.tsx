@@ -55,11 +55,10 @@ export default function PatientPage() {
 
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
-  const [docChecked, setDocChecked] = useState(false);
 
   // ---------- 1) Patient from Firestore ----------
   const patientDocRef = useMemoFirebase(() => {
-    if (!firestore || !id || isUserLoading) return null; // <-- CRITICAL FIX: Wait for user loading to complete
+    if (!firestore || !id || isUserLoading) return null; // Wait for user loading to complete
     return doc(firestore, 'patients', id);
   }, [firestore, id, isUserLoading]);
 
@@ -67,7 +66,7 @@ export default function PatientPage() {
     data: patient,
     isLoading: isLoadingPatient,
     error: patientError,
-  } = useDoc<Patient>(patientDocRef, () => setDocChecked(true));
+  } = useDoc<Patient>(patientDocRef);
 
   // ---------- 2) Sensor data from Realtime Database ----------
   const [sensorHistory, setSensorHistory] = useState<SensorData[] | null>(null);
@@ -96,7 +95,7 @@ export default function PatientPage() {
               roomTemperature: decrypted.TempDHT,
               roomHumidity: decrypted.Hum,
               gasValue: decrypted.Gaz,
-              roomOxygen: 0, // No O2 data in this stream, default to 0
+              o2Saturation: 0, // No O2 data in this stream, default to 0
               collectedBy: 'device-iot-01', // Or some device identifier
             };
 
@@ -144,7 +143,7 @@ export default function PatientPage() {
 
 
   // ---------- 4) Loading / errors / 404 ----------
-  const isStillLoading = isUserLoading || isLoadingPatient || (patientDocRef && !docChecked);
+  const isStillLoading = isUserLoading || isLoadingPatient;
 
   if (isStillLoading) {
     return (
@@ -177,8 +176,23 @@ export default function PatientPage() {
     );
   }
 
-  if (!patient) {
+  // After loading, if there's no user, an id, a ref, OR a patient, it's a 404.
+  if (!patient && patientDocRef) {
     notFound();
+  }
+
+  // This should only happen if the user is not authenticated for this patient.
+  if (!patient) {
+     return (
+      <DashboardLayout>
+        <main className="min-h-screen flex items-center justify-center">
+          <div className="border rounded-xl p-6 text-center text-sm">
+            <h2 className="font-bold text-lg mb-2">Access Denied</h2>
+            <p className="text-muted-foreground">You may not have permission to view this patient's records.</p>
+          </div>
+        </main>
+      </DashboardLayout>
+    );
   }
 
   if (patientError) {
