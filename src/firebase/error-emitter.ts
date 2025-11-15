@@ -1,7 +1,7 @@
 'use client';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-/**
+/**kk
  * Defines the shape of all possible events and their corresponding payload types.
  * This centralizes event definitions for type safety across the application.
  */

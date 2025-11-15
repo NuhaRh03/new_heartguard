@@ -22,9 +22,11 @@ export const generateSensorData = (count: number, baseline: Partial<SensorData>,
     data.push({
       timestamp,
       heartRate: (baseline.heartRate || 75) + (isCritical ? 20 : isAnomaly ? 10 : 0) + (Math.random() * 6 - 3),
-      roomOxygen: (baseline.roomOxygen || 20.9) + (isCritical ? -1 : isAnomaly ? -0.5 : 0) + (Math.random() * 0.2 - 0.1),
+      o2Saturation: (baseline.o2Saturation || 98) + (isCritical ? -8 : isAnomaly ? -4 : 0) + (Math.random() * 2 - 1),
       roomHumidity: (baseline.roomHumidity || 45) + (Math.random() * 10 - 5),
-      roomTemperature: (baseline.roomTemperature || 24) + (isCritical ? 1.5 : isAnomaly ? 0.8 : 0) + (Math.random() * 0.4 - 0.2),
+      roomTemperature: (baseline.roomTemperature || 24) + (Math.random() * 0.4 - 0.2),
+      patientTemperature: (baseline.patientTemperature || 37) + (isCritical ? 2.5 : isAnomaly ? 1.2 : 0) + (Math.random() * 0.5 - 0.25),
+      gasValue: (baseline.gasValue || 300) + (Math.random() * 50 - 25),
       collectedBy: doctorId,
     });
   }
