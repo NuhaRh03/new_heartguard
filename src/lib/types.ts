@@ -27,11 +27,12 @@ export interface Patient {
 export interface SensorData {
   id: string;
   timestamp: string; // ISO string
-  heartRate: number;
-  o2Saturation: number;
-  roomHumidity: number;
-  roomTemperature: number;
-  patientTemperature: number;
+  heartRate: number; // BPM
+  roomOxygen: number; // o2Saturation from vital card
+  roomHumidity: number; // Hum
+  roomTemperature: number; // TempDHT
+  patientTemperature: number; // TempDS
+  gasValue: number; // Gaz
   collectedBy: string;
 }
 
@@ -42,10 +43,10 @@ export interface PatientStatus {
 }
 
 export const getPatientStatusFromSensorData = (reading: Omit<SensorData, 'id'>): PatientStatus['level'] => {
-    if (reading.patientTemperature > 39.5 || reading.heartRate > 120 || reading.heartRate < 50 || reading.o2Saturation < 90) {
+    if (reading.patientTemperature > 39.5 || reading.heartRate > 120 || reading.heartRate < 50 || (reading.roomOxygen && reading.roomOxygen < 90)) {
         return 'critical';
     }
-    if (reading.patientTemperature > 38.5 || reading.heartRate > 100 || reading.heartRate < 60 || reading.o2Saturation < 95) {
+    if (reading.patientTemperature > 38.5 || reading.heartRate > 100 || reading.heartRate < 60 || (reading.roomOxygen && reading.roomOxygen < 95)) {
         return 'warning';
     }
     return 'stable';

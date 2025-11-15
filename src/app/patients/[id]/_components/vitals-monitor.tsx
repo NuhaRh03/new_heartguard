@@ -41,11 +41,11 @@ export function VitalsMonitor({ patient }: VitalsMonitorProps) {
       />
       <VitalCard
         title="O2 Saturation"
-        value={currentData.o2Saturation}
+        value={currentData.roomOxygen ?? 0}
         unit="%"
         Icon={Wind}
         data={chartData}
-        dataKey="o2Saturation"
+        dataKey="roomOxygen"
         color="hsl(var(--chart-2))"
         normalRange={[95, 100]}
       />

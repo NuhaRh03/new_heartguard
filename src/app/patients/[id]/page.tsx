@@ -6,8 +6,6 @@ import {
   getDatabase,
   ref,
   onValue,
-  query as rtdbQuery,
-  limitToLast,
 } from 'firebase/database';
 import {
   useDoc,
@@ -24,17 +22,40 @@ import { AnomalyDetector } from './_components/anomaly-detector';
 import { PatientHeader } from './_components/patient-header';
 import { useEffect, useState } from 'react';
 
+// Decrypted Data structure from the device
+interface DecryptedReading {
+    BPM: number;
+    TempDHT: number;
+    Hum: number;
+    TempDS: number;
+    Gaz: number;
+}
+
+
+async function decryptOnServer(cipherB64: string): Promise<string> {
+    const response = await fetch('/api/decrypt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cipherB64 }),
+    });
+    if (!response.ok) {
+        throw new Error('Decryption failed on server');
+    }
+    const data = await response.json();
+    return data.plaintext;
+}
+
+
 export default function PatientPage() {
-  const params = useParams<{ id: string }>();
-  const id = String(params.id);
+  const params = useParams() as any;
+  const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : undefined;
+
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
+  const [docChecked, setDocChecked] = useState(false);
 
   // ---------- 1) Patient from Firestore ----------
   const patientDocRef = useMemoFirebase(() => {
-    // CRITICAL FIX: Do not try to create the doc ref until the user (the doctor) is loaded.
-    // This prevents a race condition where the query runs before auth is ready,
-    // causing a permission error that incorrectly leads to a 404.
     if (!firestore || !id || isUserLoading) return null;
     return doc(firestore, 'patients', id);
   }, [firestore, id, isUserLoading]);
@@ -43,84 +64,85 @@ export default function PatientPage() {
     data: patient,
     isLoading: isLoadingPatient,
     error: patientError,
-  } = useDoc<Patient>(patientDocRef);
+  } = useDoc<Patient>(patientDocRef, () => setDocChecked(true));
 
   // ---------- 2) Sensor data from Realtime Database ----------
   const [sensorHistory, setSensorHistory] = useState<SensorData[] | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !user) return; // Wait for patient ID and authenticated user
 
-    try {
-      const db = getDatabase();
-      // Path: streams/{patientId}
-      const streamsRef = ref(db, `streams/${id}`);
-      // Get the last 10 readings for the patient
-      const q = rtdbQuery(streamsRef, limitToLast(10));
+    const db = getDatabase();
+    // Path: /iot_data/data
+    const streamRef = ref(db, `/iot_data/data`);
 
-      const unsubscribe = onValue(
-        q,
-        (snapshot) => {
-          const readings: SensorData[] = [];
-          if (snapshot.exists()) {
-            snapshot.forEach((readingSnap) => {
-              const readingVal = readingSnap.val() as Omit<SensorData, 'id'>;
-              readings.push({
-                id: readingSnap.key || `${id}-${Date.now()}`,
-                ...readingVal
-              });
+    const unsubscribe = onValue(
+      streamRef,
+      async (snapshot) => {
+        if (snapshot.exists()) {
+          const cipherB64 = snapshot.val();
+          try {
+            const plaintext = await decryptOnServer(cipherB64);
+            const decrypted: DecryptedReading = JSON.parse(plaintext);
+            
+            const newReading: Omit<SensorData, 'id'> = {
+              timestamp: new Date().toISOString(),
+              heartRate: decrypted.BPM,
+              patientTemperature: decrypted.TempDS,
+              roomTemperature: decrypted.TempDHT,
+              roomHumidity: decrypted.Hum,
+              gasValue: decrypted.Gaz,
+              roomOxygen: 0, // No O2 data in this stream, default to 0
+              collectedBy: 'device-iot-01', // Or some device identifier
+            };
+
+            // Prepend new reading to history
+            setSensorHistory(prev => {
+                const newHistory = [
+                    { ...newReading, id: `reading-${Date.now()}` }, 
+                    ...(prev || [])
+                ];
+                // Keep history to a reasonable size, e.g., 20 readings
+                return newHistory.slice(0, 20);
             });
+
+          } catch (error) {
+            console.error("Failed to process sensor data:", error);
           }
-          
-          // Sort descending by timestamp
-          readings.sort((a, b) => {
-            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-          });
-
-          setSensorHistory(readings);
-          setIsLoadingHistory(false);
-        },
-        (error) => {
-          console.error('Error loading sensor data from RTDB:', error);
-          setIsLoadingHistory(false);
         }
-      );
-
-      return () => {
-        unsubscribe();
-      };
-    } catch (error) {
-        console.error("Firebase Realtime Database might not be initialized:", error);
         setIsLoadingHistory(false);
-    }
-  }, [id]);
+      },
+      (error) => {
+        console.error('Error loading sensor data from RTDB:', error);
+        setIsLoadingHistory(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [id, user]);
 
    // ---------- 3) Update patient's latest data in Firestore ----------
    useEffect(() => {
-    if (patient && sensorHistory && sensorHistory.length > 0 && firestore) {
+    if (id && sensorHistory && sensorHistory.length > 0 && firestore) {
       const latestReading = sensorHistory[0];
       const latestStatus = getPatientStatusFromSensorData(latestReading);
 
       // Check if an update is needed to avoid unnecessary writes
-      if (latestReading.timestamp !== patient.lastReadingAt || patient.status !== latestStatus) {
-         
+      if (!patient || latestReading.timestamp !== patient.lastReadingAt || patient.status !== latestStatus) {
          updateDoc(doc(firestore, 'patients', id), {
-            latestSensorData: {
-                ...latestReading,
-            },
+            latestSensorData: latestReading,
             lastReadingAt: latestReading.timestamp,
             status: latestStatus,
         }).catch(err => console.error("Failed to update patient latest data:", err));
       }
     }
-  }, [patient, sensorHistory, firestore, id]);
+  }, [id, sensorHistory, firestore, patient]);
+
 
   // ---------- 4) Loading / errors / 404 ----------
-  const isStillLoading = isLoadingPatient || isUserLoading;
-  
-  // This is the definitive check. Only trigger notFound() if all loading is complete
-  // and we still have no patient data. This prevents the race condition.
+  const isStillLoading = isUserLoading || isLoadingPatient || (patientDocRef && !docChecked);
+
   if (!isStillLoading && !patient) {
     notFound();
   }
@@ -148,7 +170,6 @@ export default function PatientPage() {
     );
   }
   
-  // This check is now mostly for safety, as notFound() above should catch it.
   if (!patient) {
      return (
       <DashboardLayout>

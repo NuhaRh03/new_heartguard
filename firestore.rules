@@ -3,29 +3,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isSignedIn() {
-      return request.auth != null;
+    match /{document=**} { 
+      allow read: if true; 
     }
 
     function isOwner(docData) {
-      return isSignedIn() && request.auth.uid == docData.createdBy;
+      return request.auth != null && request.auth.uid == docData.createdBy;
     }
     
     match /doctors/{doctorId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && request.auth.uid == doctorId;
+      allow write: if request.auth != null && request.auth.uid == doctorId;
     }
 
     match /patients/{patientId} {
       allow create: if isOwner(request.resource.data);
-      allow read: if isOwner(get(/databases/$(database)/documents/patients/$(patientId)).data);
-      allow list: if isSignedIn();
+      allow list: if request.auth != null;
       allow update, delete: if isOwner(resource.data);
 
       match /sensorData/{readingId} {
         allow create: if isOwner(get(/databases/$(database)/documents/patients/$(patientId)).data);
-        allow read: if isOwner(get(/databases/$(database)/documents/patients/$(patientId)).data);
         allow list: if isOwner(get(/databases/$(database)/documents/patients/$(patientId)).data);
         allow write: if false; 
       }
