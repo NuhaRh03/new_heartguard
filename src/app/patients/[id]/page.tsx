@@ -40,7 +40,9 @@ async function decryptOnServer(cipherB64: string): Promise<string> {
         body: JSON.stringify({ cipherB64 }),
     });
     if (!response.ok) {
-        throw new Error('Decryption failed on server');
+        const errorBody = await response.json();
+        console.error('Decryption API error:', errorBody);
+        throw new Error(errorBody.error || 'Decryption failed on server');
     }
     const data = await response.json();
     return data.plaintext;
@@ -57,7 +59,7 @@ export default function PatientPage() {
 
   // ---------- 1) Patient from Firestore ----------
   const patientDocRef = useMemoFirebase(() => {
-    if (!firestore || !id || isUserLoading) return null;
+    if (!firestore || !id || isUserLoading) return null; // <-- CRITICAL FIX: Wait for user loading to complete
     return doc(firestore, 'patients', id);
   }, [firestore, id, isUserLoading]);
 
@@ -144,11 +146,7 @@ export default function PatientPage() {
   // ---------- 4) Loading / errors / 404 ----------
   const isStillLoading = isUserLoading || isLoadingPatient || (patientDocRef && !docChecked);
 
-  if (!isStillLoading && !patient) {
-    notFound();
-  }
-
-  if (isStillLoading || !patient) {
+  if (isStillLoading) {
     return (
       <DashboardLayout>
         <main className="p-4 sm:px-6 sm:py-0 md:gap-8 space-y-4">
@@ -177,6 +175,10 @@ export default function PatientPage() {
         </main>
       </DashboardLayout>
     );
+  }
+
+  if (!patient) {
+    notFound();
   }
 
   if (patientError) {
