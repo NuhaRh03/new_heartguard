@@ -9,6 +9,9 @@ import { AuthProvider } from '@/components/auth-provider';
 export const metadata: Metadata = {
   title: 'HeartGuard',
   description: 'Proactive Patient Monitoring System',
+  icons: {
+    icon: './favicon.ico',
+  },
 };
 
 export default function RootLayout({
