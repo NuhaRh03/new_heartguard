@@ -21,6 +21,7 @@ import { SensorHistory } from './_components/sensor-history';
 import { AnomalyDetector } from './_components/anomaly-detector';
 import { PatientHeader } from './_components/patient-header';
 import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Decrypted Data structure from the device
 interface DecryptedReading {
@@ -147,11 +148,32 @@ export default function PatientPage() {
     notFound();
   }
 
-  if (isStillLoading) {
+  if (isStillLoading || !patient) {
     return (
       <DashboardLayout>
-        <main className="min-h-screen flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">Loading patient…</p>
+        <main className="p-4 sm:px-6 sm:py-0 md:gap-8 space-y-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+          <div className="grid flex-1 items-start gap-4 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
+            <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Skeleton className="h-40 rounded-xl" />
+                <Skeleton className="h-40 rounded-xl" />
+                <Skeleton className="h-40 rounded-xl" />
+                <Skeleton className="h-40 rounded-xl" />
+              </div>
+              <Skeleton className="h-96 rounded-xl" />
+            </div>
+            <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+              <Skeleton className="h-48 rounded-xl" />
+              <Skeleton className="h-64 rounded-xl" />
+            </div>
+          </div>
         </main>
       </DashboardLayout>
     );
@@ -170,18 +192,6 @@ export default function PatientPage() {
     );
   }
   
-  if (!patient) {
-     return (
-      <DashboardLayout>
-        <main className="min-h-screen flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            No patient data could be loaded.
-          </p>
-        </main>
-      </DashboardLayout>
-    );
-  }
-
   // ---------- 5) Page layout ----------
   return (
     <DashboardLayout>
