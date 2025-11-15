@@ -1,4 +1,4 @@
-# Tjjjjjjjo learn more about how to use Nix to configure your environment
+# Tjjhhhhjjjjjo learn more about how to use Nix to configure your environment
 # see: https://firebase.google.com/docs/studio/customize-workspace
 {pkgs}: {
   # Which nixpkgs channel to use.
