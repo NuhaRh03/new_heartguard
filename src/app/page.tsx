@@ -68,10 +68,11 @@ export default function DashboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Patient</TableHead>
-                  <TableHead className="hidden md:table-cell">Age</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Patient Temp (°C)</TableHead>
-                  <TableHead className="hidden md:table-cell">Room Temp (°C)</TableHead>
+                  <TableHead className="hidden lg:table-cell">Heart Rate</TableHead>
+                  <TableHead className="hidden lg:table-cell">O₂ Sat.</TableHead>
+                  <TableHead className="hidden md:table-cell">Patient Temp</TableHead>
+                  <TableHead className="hidden xl:table-cell">Room Temp</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -84,18 +85,18 @@ export default function DashboardPage() {
                         <Skeleton className="h-4 w-32" />
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-8" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                     <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell className="hidden xl:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="text-right"><Button variant="ghost" size="sm" disabled>View</Button></TableCell>
                   </TableRow>
                 ))}
                 {!isLoading && patients?.map((patient) => {
                   const latestReading = patient.latestSensorData;
                   const status = getPatientStatusAppearance(patient.status);
-                  const age = calculateAge(patient.birthDate);
-
+                  
                   return (
                     <TableRow key={patient.id}>
                       <TableCell>
@@ -110,11 +111,13 @@ export default function DashboardPage() {
                                 : 'P'}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="font-medium">{patient.name}</div>
+                          <div>
+                            <div className="font-medium">{patient.name}</div>
+                            <div className="text-sm text-muted-foreground hidden md:inline">
+                               {calculateAge(patient.birthDate)} yrs &bull; {patient.gender}
+                            </div>
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {isNaN(age) ? 'N/A' : age}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -131,9 +134,15 @@ export default function DashboardPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {latestReading?.patientTemperature ? `${latestReading.patientTemperature.toFixed(1)} °C` : 'N/A'}
+                        {latestReading?.heartRate ? `${latestReading.heartRate.toFixed(0)} bpm` : 'N/A'}
+                      </TableCell>
+                       <TableCell className="hidden lg:table-cell">
+                        {latestReading?.o2Saturation ? `${latestReading.o2Saturation.toFixed(1)} %` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
+                        {latestReading?.patientTemperature ? `${latestReading.patientTemperature.toFixed(1)} °C` : 'N"A'}
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
                         {latestReading?.roomTemperature ? `${latestReading.roomTemperature.toFixed(1)} °C` : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
