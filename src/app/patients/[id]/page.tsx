@@ -104,9 +104,8 @@ export default function PatientPage() {
 
       // Check if an update is needed to avoid unnecessary writes
       if (latestReading.timestamp !== patient.lastReadingAt || patient.status !== latestStatus) {
-         const patientRef = doc(firestore, 'patients', patient.id);
          
-         updateDoc(patientRef, {
+         updateDoc(doc(firestore, 'patients', id), {
             latestSensorData: {
                 ...latestReading,
             },
@@ -115,7 +114,7 @@ export default function PatientPage() {
         }).catch(err => console.error("Failed to update patient latest data:", err));
       }
     }
-  }, [patient, sensorHistory, firestore]);
+  }, [patient, sensorHistory, firestore, id]);
 
   // ---------- 4) Loading / errors / 404 ----------
   const isStillLoading = isLoadingPatient || isUserLoading;
