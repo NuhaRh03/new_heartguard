@@ -32,7 +32,7 @@ export interface SensorData {
   roomHumidity: number; // Hum
   roomTemperature: number; // TempDHT
   patientTemperature: number; // TempDS
-  gasValue: number; // Gaz
+  gasValue?: number; // Gaz - now optional as it's processed
   collectedBy: string;
 }
 

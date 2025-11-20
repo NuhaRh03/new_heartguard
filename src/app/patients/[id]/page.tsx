@@ -48,6 +48,23 @@ async function decryptOnServer(cipherB64: string): Promise<string> {
     return data.plaintext;
 }
 
+// Function to map the gas value to O2 saturation
+// This is a simplified example. A real-world scenario would require a calibrated sensor and a proper conversion formula.
+const mapGasToO2 = (gasValue: number): number => {
+    const minGas = 200; // Lower bound of your sensor's expected "normal" air reading
+    const maxGas = 800; // Upper bound (less oxygen)
+    const minO2 = 90; // Don't show less than 90%
+    const maxO2 = 100; // Max O2
+
+    // Clamp the gas value to its expected range
+    const clampedGas = Math.max(minGas, Math.min(gasValue, maxGas));
+    
+    // Invert the mapping: higher gas value means lower O2
+    const o2 = maxO2 - ((clampedGas - minGas) / (maxGas - minGas)) * (maxO2 - minO2);
+
+    return Math.max(minO2, Math.min(o2, maxO2)); // Ensure the result is within O2 bounds
+};
+
 
 export default function PatientPage() {
   const params = useParams() as any;
@@ -95,7 +112,7 @@ export default function PatientPage() {
               roomTemperature: decrypted.TempDHT,
               roomHumidity: decrypted.Hum,
               gasValue: decrypted.Gaz,
-              o2Saturation: 0, // No O2 data in this stream, default to 0
+              o2Saturation: mapGasToO2(decrypted.Gaz),
               collectedBy: 'device-iot-01', // Or some device identifier
             };
 
