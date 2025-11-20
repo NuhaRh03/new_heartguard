@@ -41,20 +41,23 @@ const prompt = ai.definePrompt({
   name: 'predictiveAnomalyDetectionPrompt',
   input: {schema: PredictiveAnomalyDetectionInputSchema},
   output: {schema: PredictiveAnomalyDetectionOutputSchema},
-  prompt: `You are an AI assistant specializing in detecting anomalies in patient sensor data.
+  prompt: `You are an AI assistant trained to function like a RandomForestClassifier for patient vital signs. Your task is to analyze time-series sensor data and classify the patient's condition.
 
-  Analyze the provided sensor data for patient {{patientId}} and determine the anomaly level on a scale of 0 (no anomaly) to 10 (critical anomaly).
+  Analyze the provided sensor data for patient {{patientId}}. Based on the patterns, classify the risk and determine an "anomaly level" from 0 (no risk) to 10 (critical risk).
 
-  Sensor Data:
+  Key features to consider for classification are:
+  - Heart Rate: Normal is 60-100 bpm. Deviations are significant.
+  - Patient Temperature: Normal is 36.5-37.5°C. High fever is a critical indicator.
+  - O2 Saturation: Normal is 95-100%. Anything below 95% is a concern, below 90% is critical.
+
+  Sensor Data History:
   {{#each sensorData}}
-  - Timestamp: {{timestamp}}, Heart Rate: {{heartRate}} bpm, Patient Temp: {{patientTemperature}}°C, Room Temp: {{roomTemperature}}°C, O₂ Saturation: {{o2Saturation}}%, Room Humidity: {{roomHumidity}}%
+  - Timestamp: {{timestamp}}, Heart Rate: {{heartRate}} bpm, Patient Temp: {{patientTemperature}}°C, O₂ Saturation: {{o2Saturation}}%
   {{/each}}
 
-  Consider the relationships between different sensor readings and identify any unusual patterns or deviations from the norm. A high patient temperature, low O2 saturation, or very high/low heart rate are significant indicators.
+  Your output should be based on a holistic analysis of these features. If the anomaly level meets or exceeds the alert threshold of {{alertThreshold}}, set alertTriggered to true.
 
-  Based on the anomaly level and the alert threshold of {{alertThreshold}}, determine whether an alert should be triggered.
-
-  Provide a concise, one-sentence explanation for your analysis.
+  Provide a very brief, one-sentence explanation for your classification, referencing the most important feature that influenced the result.
   `,
 });
 
