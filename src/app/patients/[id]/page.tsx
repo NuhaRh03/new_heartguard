@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, notFound } from 'next/navigation';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, addDoc, collection, query, orderBy, limit } from 'firebase/firestore';
 import {
   getDatabase,
   ref,
@@ -12,16 +12,18 @@ import {
   useFirestore,
   useMemoFirebase,
   useUser,
+  useCollection,
 } from '@/firebase';
-import { getPatientStatusFromSensorData, type Patient, type SensorData } from '@/lib/types';
+import { getPatientStatusFromSensorData, getAIStatus, type Patient, type SensorData } from '@/lib/types';
 import { PatientInfoCard } from './_components/patient-info-card';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { VitalsMonitor } from './_components/vitals-monitor';
 import { SensorHistory } from './_components/sensor-history';
-import { AnomalyDetector } from './_components/anomaly-detector';
+import { AIAnalysisCard } from './_components/ai-analysis-card';
 import { PatientHeader } from './_components/patient-header';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { runAnomalyDetection } from './actions';
 
 // Decrypted Data structure from the device
 interface DecryptedReading {
@@ -85,21 +87,28 @@ export default function PatientPage() {
     error: patientError,
   } = useDoc<Patient>(patientDocRef);
 
-  // ---------- 2) Sensor data from Realtime Database ----------
-  const [sensorHistory, setSensorHistory] = useState<SensorData[] | null>(null);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  // ---------- 2) Sensor history from Firestore ----------
+  const sensorHistoryQuery = useMemoFirebase(() => {
+    if (!patientDocRef) return null;
+    return query(collection(patientDocRef, 'sensorData'), orderBy('timestamp', 'desc'), limit(20));
+  }, [patientDocRef]);
 
+  const { data: sensorHistory, isLoading: isLoadingHistory } = useCollection<SensorData>(sensorHistoryQuery);
+
+  const isProcessing = useRef(false);
+
+  // ---------- 3) Sensor data from Realtime Database ----------
   useEffect(() => {
-    if (!id || !user) return; // Wait for patient ID and authenticated user
+    if (!id || !user || !firestore) return; // Wait for patient ID and authenticated user
 
     const db = getDatabase();
-    // Path: /iot_data/data
     const streamRef = ref(db, `/iot_data/data`);
 
     const unsubscribe = onValue(
       streamRef,
       async (snapshot) => {
-        if (snapshot.exists()) {
+        if (snapshot.exists() && !isProcessing.current) {
+          isProcessing.current = true;
           const cipherB64 = snapshot.val();
           try {
             const plaintext = await decryptOnServer(cipherB64);
@@ -113,50 +122,67 @@ export default function PatientPage() {
               roomHumidity: decrypted.Hum,
               gasValue: decrypted.Gaz,
               o2Saturation: mapGasToO2(decrypted.Gaz),
-              collectedBy: 'device-iot-01', // Or some device identifier
+              collectedBy: 'device-iot-01',
             };
-
-            // Prepend new reading to history
-            setSensorHistory(prev => {
-                const newHistory = [
-                    { ...newReading, id: `reading-${Date.now()}` }, 
-                    ...(prev || [])
-                ];
-                // Keep history to a reasonable size, e.g., 20 readings
-                return newHistory.slice(0, 20);
+            
+            // Save the new reading to the sensorData subcollection
+            const readingsCollectionRef = collection(firestore, 'patients', id, 'sensorData');
+            await addDoc(readingsCollectionRef, {
+                ...newReading,
+                timestamp: serverTimestamp() // Use server timestamp for consistency
             });
+
+            const allReadings = [newReading, ...(sensorHistory || []).map(s => ({...s, timestamp: new Date(s.timestamp).toISOString()}))].slice(0, 20);
+
+            // Run AI analysis
+            const aiResponse = await runAnomalyDetection({
+                patientId: id,
+                sensorData: allReadings.map(d => ({
+                    timestamp: d.timestamp,
+                    heartRate: d.heartRate,
+                    o2Saturation: d.o2Saturation,
+                    roomTemperature: d.roomTemperature,
+                    patientTemperature: d.patientTemperature,
+                    roomHumidity: d.roomHumidity,
+                })),
+                alertThreshold: 7,
+            });
+            
+            // Update patient doc with latest data and AI analysis
+             if (patientDocRef) {
+                const updatePayload: Partial<Patient> = {
+                    latestSensorData: newReading,
+                    lastReadingAt: newReading.timestamp,
+                };
+                if(aiResponse.success && aiResponse.data) {
+                    updatePayload.status = getAIStatus(aiResponse.data.anomalyLevel);
+                    updatePayload.aiAnalysis = {
+                        anomalyLevel: aiResponse.data.anomalyLevel,
+                        explanation: aiResponse.data.explanation,
+                        alertTriggered: aiResponse.data.alertTriggered,
+                        analyzedAt: new Date().toISOString()
+                    };
+                } else {
+                    updatePayload.status = getPatientStatusFromSensorData(newReading);
+                }
+                await updateDoc(patientDocRef, updatePayload);
+             }
+
 
           } catch (error) {
             console.error("Failed to process sensor data:", error);
+          } finally {
+            isProcessing.current = false;
           }
         }
-        setIsLoadingHistory(false);
       },
       (error) => {
         console.error('Error loading sensor data from RTDB:', error);
-        setIsLoadingHistory(false);
       }
     );
 
     return () => unsubscribe();
-  }, [id, user]);
-
-   // ---------- 3) Update patient's latest data in Firestore ----------
-   useEffect(() => {
-    if (id && sensorHistory && sensorHistory.length > 0 && firestore) {
-      const latestReading = sensorHistory[0];
-      const latestStatus = getPatientStatusFromSensorData(latestReading);
-
-      // Check if an update is needed to avoid unnecessary writes
-      if (!patient || latestReading.timestamp !== patient.lastReadingAt || patient.status !== latestStatus) {
-         updateDoc(doc(firestore, 'patients', id), {
-            latestSensorData: latestReading,
-            lastReadingAt: latestReading.timestamp,
-            status: latestStatus,
-        }).catch(err => console.error("Failed to update patient latest data:", err));
-      }
-    }
-  }, [id, sensorHistory, firestore, patient]);
+  }, [id, user, firestore, patientDocRef, sensorHistory]);
 
 
   // ---------- 4) Loading / errors / 404 ----------
@@ -236,7 +262,7 @@ export default function PatientPage() {
             <SensorHistory sensorHistory={sensorHistory} isLoading={isLoadingHistory} />
           </div>
           <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-            <AnomalyDetector patient={patient} sensorHistory={sensorHistory} />
+            <AIAnalysisCard patient={patient} />
             <PatientInfoCard patient={patient} />
           </div>
         </div>
@@ -244,3 +270,5 @@ export default function PatientPage() {
     </DashboardLayout>
   );
 }
+
+    

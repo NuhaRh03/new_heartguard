@@ -79,6 +79,9 @@
         },
         "latestSensorData": {
           "$ref": "#/entities/SensorData"
+        },
+        "aiAnalysis": {
+            "$ref": "#/entities/AIAnalysisResult"
         }
       },
       "required": [
@@ -88,6 +91,32 @@
         "emergencyContact",
         "createdBy"
       ]
+    },
+    "AIAnalysisResult": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AIAnalysisResult",
+      "type": "object",
+      "description": "Represents the result of an AI analysis on sensor data.",
+      "properties": {
+        "anomalyLevel": {
+          "type": "number",
+          "description": "The detected anomaly level (0-10)."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "The AI-generated explanation for the analysis."
+        },
+        "alertTriggered": {
+          "type": "boolean",
+          "description": "Whether the anomaly level triggered an alert."
+        },
+        "analyzedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the analysis was performed."
+        }
+      },
+      "required": ["anomalyLevel", "explanation", "alertTriggered", "analyzedAt"]
     },
     "SensorData": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -219,3 +248,5 @@
     "reasoning": "This structure uses a top-level `patients` collection for easier querying across all patients if needed in the future, while still maintaining security. Doctor profiles are kept separate in their own collection. A `sensorData` subcollection is used to store time-series data for each patient. Security rules are designed to ensure that doctors can only access patient data they have created and the corresponding sensor data."
   }
 }
+
+    
