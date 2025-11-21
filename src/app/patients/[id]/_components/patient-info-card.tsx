@@ -1,8 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Phone, Mail } from "lucide-react";
+import { User, Phone, Mail, Stethoscope, Pill, ShieldAlert } from "lucide-react";
 import type { Patient } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface PatientInfoCardProps {
   patient: Patient;
@@ -45,16 +46,52 @@ export function PatientInfoCard({ patient }: PatientInfoCardProps) {
         </div>
         
         <Separator />
-
+        
         <div className="space-y-3">
             <h3 className="font-semibold flex items-center gap-2 text-sm text-destructive">
-                <Phone size={16} /> Emergency Contact
+                <ShieldAlert size={16} /> Emergency Contact
             </h3>
+             <InfoRow
+                icon={<User size={14} />}
+                label="Name"
+                value={patient.emergencyContact?.name}
+            />
+            <InfoRow
+                icon={<Stethoscope size={14} />}
+                label="Relationship"
+                value={patient.emergencyContact?.relationship}
+            />
              <InfoRow
                 icon={<Phone size={14} />}
                 label="Phone Number"
-                value={patient.emergencyContact}
+                value={patient.emergencyContact?.phone}
             />
+        </div>
+
+        <Separator />
+
+        <div className="space-y-3">
+            <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <Stethoscope size={16} /> Medical History
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {patient.historicalDiseases?.length > 0 ? patient.historicalDiseases.map(disease => (
+                <Badge key={disease} variant="secondary">{disease}</Badge>
+              )) : <p className="text-xs text-muted-foreground">No historical diseases listed.</p>}
+            </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-3">
+            <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <Pill size={16} /> Current Medications
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {patient.currentMedications?.length > 0 ? patient.currentMedications.map(med => (
+                <Badge key={med} variant="secondary">{med}</Badge>
+              )) : <p className="text-xs text-muted-foreground">No current medications listed.</p>}
+            </div>
         </div>
       </CardContent>
     </Card>

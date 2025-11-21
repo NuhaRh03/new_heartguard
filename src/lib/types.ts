@@ -13,13 +13,18 @@ export interface Patient {
   name: string;
   birthDate: string;
   gender: 'Male' | 'Female' | 'Other';
-  emergencyContact: string;
+  emergencyContact: {
+      name: string;
+      relationship: string;
+      phone: string;
+  };
   email?: string;
   phone?: string;
   historicalDiseases: string[];
   currentMedications: string[];
   createdBy: string; 
   status?: 'stable' | 'warning' | 'critical' | 'unknown';
+  createdAt?: string;
   lastReadingAt?: string; // ISO string
   latestSensorData?: Omit<SensorData, 'id'>;
 }

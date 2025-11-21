@@ -35,8 +35,14 @@
             "description": "The patient's phone number."
         },
         "emergencyContact": {
-            "type": "string",
-            "description": "The patient's emergency contact phone number."
+            "type": "object",
+            "description": "The patient's emergency contact details.",
+            "properties": {
+                "name": {"type": "string"},
+                "relationship": {"type": "string"},
+                "phone": {"type": "string"}
+            },
+            "required": ["name", "relationship", "phone"]
         },
         "historicalDiseases": {
           "type": "array",

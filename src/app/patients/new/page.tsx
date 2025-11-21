@@ -25,7 +25,9 @@ const patientSchema = z.object({
   phone: z.string().optional(),
   birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format."}),
   gender: z.enum(["Male", "Female", "Other"]),
-  emergencyContact: z.string().min(10, "Enter a valid phone number."),
+  emergencyContactName: z.string().min(2, "Name is required"),
+  emergencyContactRelationship: z.string().min(2, "Relationship is required"),
+  emergencyContactPhone: z.string().min(10, "Enter a valid phone number."),
   historicalDiseases: z.string().optional(),
   currentMedications: z.string().optional(),
 });
@@ -52,7 +54,9 @@ export default function AddPatientPage() {
       gender: "Female",
       email: "maria.garcia@example.com",
       phone: "555-0102",
-      emergencyContact: "+212600123456",
+      emergencyContactName: "Carlos Garcia",
+      emergencyContactRelationship: "Husband",
+      emergencyContactPhone: "+212600123456",
       historicalDiseases: "Hypertension",
       currentMedications: "Amlodipine"
     }
@@ -71,11 +75,26 @@ export default function AddPatientPage() {
             phone: data.phone,
             birthDate: data.birthDate,
             gender: data.gender,
-            emergencyContact: data.emergencyContact,
+            emergencyContact: {
+              name: data.emergencyContactName,
+              relationship: data.emergencyContactRelationship,
+              phone: data.emergencyContactPhone
+            },
             historicalDiseases: data.historicalDiseases ? data.historicalDiseases.split(',').map(s => s.trim()).filter(Boolean) : [],
             currentMedications: data.currentMedications ? data.currentMedications.split(',').map(s => s.trim()).filter(Boolean) : [],
             createdBy: doctor.uid,
             status: 'unknown',
+            createdAt: new Date().toISOString(),
+            lastReadingAt: new Date().toISOString(),
+            latestSensorData: {
+              timestamp: new Date().toISOString(),
+              heartRate: 0,
+              o2Saturation: 0,
+              roomHumidity: 0,
+              roomTemperature: 0,
+              patientTemperature: 0,
+              collectedBy: 'system-init',
+            }
         };
 
         const patientsCollection = collection(firestore, 'patients');
@@ -149,12 +168,29 @@ export default function AddPatientPage() {
                                 />
                                 {errors.gender && <p className="text-destructive text-sm mt-1">{errors.gender.message}</p>}
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="emergencyContact">Emergency Contact Phone</Label>
-                                <Input id="emergencyContact" {...register("emergencyContact")} />
-                                {errors.emergencyContact && <p className="text-destructive text-sm mt-1">{errors.emergencyContact.message}</p>}
+                        </div>
+                        
+                        <div className="space-y-4 rounded-lg border p-4">
+                            <h3 className="font-medium">Emergency Contact</h3>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="emergencyContactName">Full Name</Label>
+                                    <Input id="emergencyContactName" {...register("emergencyContactName")} />
+                                    {errors.emergencyContactName && <p className="text-destructive text-sm mt-1">{errors.emergencyContactName.message}</p>}
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                                    <Input id="emergencyContactRelationship" {...register("emergencyContactRelationship")} />
+                                    {errors.emergencyContactRelationship && <p className="text-destructive text-sm mt-1">{errors.emergencyContactRelationship.message}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="emergencyContactPhone">Phone</Label>
+                                    <Input id="emergencyContactPhone" {...register("emergencyContactPhone")} />
+                                    {errors.emergencyContactPhone && <p className="text-destructive text-sm mt-1">{errors.emergencyContactPhone.message}</p>}
+                                </div>
                             </div>
                         </div>
+
 
                         <div className="space-y-2">
                             <Label htmlFor="historicalDiseases">Historical Diseases (comma-separated)</Label>
