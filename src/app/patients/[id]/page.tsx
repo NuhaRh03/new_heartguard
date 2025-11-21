@@ -14,40 +14,24 @@ import {
   useUser,
   useCollection,
 } from '@/firebase';
-import { getPatientStatusFromSensorData, getAIStatus, type Patient, type SensorData } from '@/lib/types';
+import { getAIStatus, type Patient, type SensorData } from '@/lib/types';
 import { PatientInfoCard } from './_components/patient-info-card';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { VitalsMonitor } from './_components/vitals-monitor';
 import { SensorHistory } from './_components/sensor-history';
 import { AIAnalysisCard } from './_components/ai-analysis-card';
 import { PatientHeader } from './_components/patient-header';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { runAnomalyDetection } from './actions';
 
-// Decrypted Data structure from the device
-interface DecryptedReading {
+// Data structure from the device
+interface RawReading {
     BPM: number;
     TempDHT: number;
     Hum: number;
     TempDS: number;
     Gaz: number;
-}
-
-
-async function decryptOnServer(cipherB64: string): Promise<string> {
-    const response = await fetch('/api/decrypt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cipherB64 }),
-    });
-    if (!response.ok) {
-        const errorBody = await response.json();
-        console.error('Decryption API error:', errorBody);
-        throw new Error(errorBody.error || 'Decryption failed on server');
-    }
-    const data = await response.json();
-    return data.plaintext;
 }
 
 // Function to map the gas value to O2 saturation
@@ -109,19 +93,25 @@ export default function PatientPage() {
       async (snapshot) => {
         if (snapshot.exists() && !isProcessing.current) {
           isProcessing.current = true;
-          const cipherB64 = snapshot.val();
           try {
-            const plaintext = await decryptOnServer(cipherB64);
-            const decrypted: DecryptedReading = JSON.parse(plaintext);
+            // Data is now expected to be a raw JSON object
+            const rawReading: RawReading = snapshot.val();
             
+            // Validate the received data
+            if (typeof rawReading.BPM !== 'number') {
+                console.warn("Received invalid sensor data, skipping.", rawReading);
+                isProcessing.current = false;
+                return;
+            }
+
             const newReading: Omit<SensorData, 'id'> = {
               timestamp: new Date().toISOString(),
-              heartRate: decrypted.BPM,
-              patientTemperature: decrypted.TempDS,
-              roomTemperature: decrypted.TempDHT,
-              roomHumidity: decrypted.Hum,
-              gasValue: decrypted.Gaz,
-              o2Saturation: mapGasToO2(decrypted.Gaz),
+              heartRate: rawReading.BPM,
+              patientTemperature: rawReading.TempDS,
+              roomTemperature: rawReading.TempDHT,
+              roomHumidity: rawReading.Hum,
+              gasValue: rawReading.Gaz,
+              o2Saturation: mapGasToO2(rawReading.Gaz),
               collectedBy: 'device-iot-01',
             };
             
@@ -154,6 +144,7 @@ export default function PatientPage() {
                     latestSensorData: newReading,
                     lastReadingAt: newReading.timestamp,
                 };
+
                 if(aiResponse.success && aiResponse.data) {
                     updatePayload.status = getAIStatus(aiResponse.data.anomalyLevel);
                     updatePayload.aiAnalysis = {
@@ -163,16 +154,15 @@ export default function PatientPage() {
                         analyzedAt: new Date().toISOString()
                     };
                 } else {
-                    updatePayload.status = getPatientStatusFromSensorData(newReading);
+                   updatePayload.status = getAIStatus(0); // Default to stable if AI fails
                 }
                 await updateDoc(patientDocRef, updatePayload);
              }
 
-
           } catch (error) {
             console.error("Failed to process sensor data:", error);
           } finally {
-            isProcessing.current = false;
+            setTimeout(() => { isProcessing.current = false; }, 1000); // Prevent rapid-fire processing
           }
         }
       },
@@ -270,5 +260,3 @@ export default function PatientPage() {
     </DashboardLayout>
   );
 }
-
-    

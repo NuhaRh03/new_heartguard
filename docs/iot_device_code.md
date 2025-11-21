@@ -1,6 +1,6 @@
 # IoT Device Code
 
-This file contains the C++ code intended for an ESP32 device to read sensor data, encrypt it, and send it to Firebase Realtime Database.
+This file contains the C++ code intended for an ESP32 device to read sensor data and send it to Firebase Realtime Database. This version sends a raw JSON object, without encryption.
 
 ```cpp
 #include <WiFi.h>
@@ -8,33 +8,26 @@ This file contains the C++ code intended for an ESP32 device to read sensor data
 #include <DHT.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <AESLib.h>
-#include <Base64.h> // pour encoder les données AES
 
 // ====== CONFIG WIFI ======
 #define WIFI_SSID "FSA-2"
 #define WIFI_PASSWORD ""
 
 // ====== CONFIG FIREBASE ======
-#define API_KEY ""
-#define DATABASE_URL "https://iot-cloud-project-92142-default-rtdb.europe-west1.firebasedatabase.app/" // Remplace par ton URL
+#define API_KEY "" // Replace with your Firebase Web API Key
+#define DATABASE_URL "https://iot-cloud-project-92142-default-rtdb.europe-west1.firebasedatabase.app/" // Replace with your RTDB URL
 
 // ====== CAPTEURS ======
 #define DHTPIN 4
 #define DHTTYPE DHT22
 #define ONE_WIRE_BUS 5
 #define MQ135_PIN 34
-#define SAMPLE_INTERVAL 2000
+#define SAMPLE_INTERVAL 5000 // Send data every 5 seconds
 
 // ====== OBJETS ======
 DHT dht(DHTPIN, DHTTYPE);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-AESLib aesLib;
-
-// ====== CLÉ AES ======
-byte aes_key[16] = {'M','a','C','l','e','S','e','c','r','e','t','e','A','E','S','1'};
-byte aes_iv[16]  = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 
 // ====== FIREBASE ======
 FirebaseData fbdo;
@@ -55,9 +48,11 @@ void setup() {
   }
   Serial.println("\n✅ Connecté au WiFi");
 
-  // --- Authentification Firebase ---
-  auth.user.email = "";       // ton email Firebase
-  auth.user.password = "";     
+  // --- Authentification Firebase (Anonymous or other) ---
+  // For this simplified example, we can use anonymous auth or no auth if rules allow.
+  // If using email/password, fill these in.
+  auth.user.email = "";
+  auth.user.password = "";
 
   // --- Configuration Firebase ---
   config.api_key = API_KEY;
@@ -65,7 +60,7 @@ void setup() {
 
   // Optionnel : callback pour surveiller l'état du token
   config.token_status_callback = [](TokenInfo info){
-    Serial.printf("Firebase token type: %d, status: %d\n", info.type, info.status);
+    Serial.printf("Firebase token status: %s\n", info.status_string.c_str());
   };
 
   // --- Initialisation Firebase ---
@@ -84,29 +79,30 @@ void loop() {
   float tempDS = sensors.getTempCByIndex(0);
   int gasValue = analogRead(MQ135_PIN);
 
-  // --- Format JSON ---
-  char json[256];
-  sprintf(json,
-          "{\"BPM\":%d,\"TempDHT\":%.2f,\"Hum\":%.2f,\"TempDS\":%.2f,\"Gaz\":%d}",
-          bpm, tempDHT, hum, tempDS, gasValue);
+  // Check if readings are valid
+  if (isnan(tempDHT) || isnan(hum) || tempDS == -127.0) {
+    Serial.println("❌ Failed to read from sensors!");
+    delay(SAMPLE_INTERVAL);
+    return;
+  }
 
-  // --- Chiffrement AES ---
-  byte encrypted_bytes[256];
-  int enc_len = aesLib.encrypt((byte*)json, strlen(json), encrypted_bytes, aes_key, 128, aes_iv);
+  // --- Création de l'objet JSON ---
+  FirebaseJson json;
+  json.set("BPM", bpm);
+  json.set("TempDHT", String(tempDHT, 2));
+  json.set("Hum", String(hum, 2));
+  json.set("TempDS", String(tempDS, 2));
+  json.set("Gaz", gasValue);
 
-  // --- Encodage Base64 ---
-  char encrypted_base64[512];
-  base64_encode(encrypted_base64, (char*)encrypted_bytes, enc_len);
-
-  // --- Affichage console ---
-  Serial.println("=== Données chiffrées (Base64) ===");
-  Serial.println(encrypted_base64);
+  Serial.println("=== Sending JSON Data ===");
+  json.toString(Serial, true); // Print the JSON to Serial monitor
 
   // --- Envoi sur Firebase ---
-  if (Firebase.RTDB.pushString(&fbdo, "/iot_data/data", encrypted_base64)) {
-    Serial.println("✅ Données envoyées avec succès !");
+  // We use setJson instead of pushString
+  if (Firebase.RTDB.setJSON(&fbdo, "/iot_data/data", &json)) {
+    Serial.println("\n✅ Données envoyées avec succès !");
   } else {
-    Serial.print("❌ Erreur d’envoi : ");
+    Serial.print("\n❌ Erreur d’envoi : ");
     Serial.println(fbdo.errorReason());
   }
 
