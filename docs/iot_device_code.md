@@ -1,7 +1,7 @@
 # IoT Device Code
 
 This file contains the C++ code intended for an ESP32 device to read sensor data and send it to Firebase Realtime Database. This version sends a raw JSON object, without encryption.
-
+#this my code
 ```cpp
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
